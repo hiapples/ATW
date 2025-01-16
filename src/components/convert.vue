@@ -75,7 +75,6 @@ const handleOrderMerge = () => {
   showNotificationWithDelay('Order Merged Successfully!', 'success');
 };
 
-
 // 清除內容
 const handleClear = () => {
   inputText.value = '';
@@ -95,21 +94,21 @@ const handleClear = () => {
 
     <!-- 輸入與輸出區 -->
     <div class="row mt-5">
-      <div class="col d-flex justify-content-center">
+      <div class="col-12 col-md-6 d-flex justify-content-center">
         <textarea
           class="form-control"
           v-model="inputText"
           placeholder="Enter orders (one per line)..."
         ></textarea>
       </div>
-      <div class="col d-flex justify-content-center">
+      <div class="col-12 mt-2 mt-md-0 col-md-6 d-flex justify-content-center">
         <div class="output">{{ outputText }}</div> <!-- 顯示 outputText -->
       </div>
     </div>
 
     <!-- 操作按鈕 -->
     <div class="row">
-      <div class="col mt-5 d-flex justify-content-center">
+      <div class="col-12 d-flex justify-content-center mt-5">
         <button class="convert" @click="handleOrderMerge">Merge Orders</button>
         <button class="cls ms-3" @click="handleClear">Clear</button>
       </div>
@@ -119,23 +118,34 @@ const handleClear = () => {
 
 <style scoped>
 textarea {
-  width: 95%;
+  width: 100%; /* Full width on small screens0 */
   resize: none;
   height: 400px;
   border: 2px solid #000;
+}
+@media (max-width: 767px) {
+  textarea, .output {
+    height: 250px; /* Half the height on small screens0 */
+  }
 }
 textarea:focus {
   outline: none;
   border-color: black;
 }
 .output {
-  width: 95%;
+  width: 100%; /* Full width on small screens */
   border: 2px solid #000;
   height: 400px;
   border-radius: 5px;
   padding: 10px;
   white-space: pre-line;
   overflow-y: auto;
+}
+/* 在中型設備及以下時，將高度設定為一半 */
+@media (max-width: 767px) {
+  .output {
+    height: 250px; /* Half the height on small screens */
+  }
 }
 .convert,
 .cls {
@@ -146,7 +156,8 @@ textarea:focus {
   border: none;
   cursor: pointer;
   transition: background-color 0.3s ease;
-  width: 10%;
+  width: 100%; /* Full width on small screens */
+  max-width: 200px; /* Max width for larger screens */
 }
 .convert {
   background-color: #4caf50;
