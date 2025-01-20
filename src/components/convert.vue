@@ -1,14 +1,14 @@
 <script setup>
 import { ref } from 'vue';
 
-const inputText = ref(''); // 輸入框內容
-const outputText = ref(''); // 整合輸出框
-const notificationMessage = ref(''); // 通知訊息
-const notificationType = ref(''); // 通知類型
-const showNotification = ref(false); // 控制通知顯示
-let notificationTimeout; // 計時器參考
+const inputText = ref(''); // 输入框内容
+const outputText = ref(''); // 输出结果
+const notificationMessage = ref(''); // 通知消息
+const notificationType = ref(''); // 通知类型
+const showNotification = ref(false); // 控制通知显示
+let notificationTimeout; // 计时器参考
 
-// 顯示通知
+// 显示通知
 const showNotificationWithDelay = (message, type) => {
   if (notificationTimeout) clearTimeout(notificationTimeout);
   showNotification.value = false;
@@ -23,59 +23,77 @@ const showNotificationWithDelay = (message, type) => {
   }, 300);
 };
 
-// 檢查是否包含必要項目
+// 检查是否包含必要项
 const validateLine = (line) => {
-  const parts = line.split(/\s+/); // 支援多個空白或 Tab 分隔
-  return parts.length >= 4; // 確保至少有四部分：收件人、電話、地址、品項
+  const parts = line.split(/\t/); // 以 Tab 分隔
+  return parts.length >= 11; // 确保至少有 11 部分
 };
 
-// 整合訂單邏輯
+// 合并订单逻辑
 const handleOrderMerge = () => {
   if (!inputText.value.trim()) {
-    outputText.value = ''; // 清空輸出框
+    outputText.value = ''; // 清空输出框
     showNotificationWithDelay('Please enter content...', 'error');
     return;
   }
 
   const lines = inputText.value.trim().split('\n'); // 分割每一行
 
-  // 驗證每行格式
+  // 验证每行格式
   const invalidLines = lines.filter((line) => !validateLine(line.trim()));
   if (invalidLines.length > 0) {
     showNotificationWithDelay(`Error: Invalid lines detected:\n${invalidLines.join('\n')}`, 'error');
     return;
   }
 
-  const orderMap = new Map(); // 儲存訂單資料
+  const orderMap = new Map(); // 存储订单数据
 
   lines.forEach((line) => {
-    const parts = line.trim().split(/\s+/); // 分割每行
-    const key = parts.slice(0, 3).join(' '); // 客戶資訊作為鍵
-    const product = parts[3]; // 商品類型
+    const parts = line.trim().split(/\t/); // 以 Tab 分隔每行
+    const orderNumber = parts[0]; // 订单号
+    const name = parts[3]; // 姓名
+    const phone = parts[4]; // 电话
+    const address = parts[5]; // 地址
+    const product = parts[9]; // 商品名称
+    const quantity = parseInt(parts[10], 10); // 商品数量
+
+    // 生成一个唯一的键，判断是否存在相同的订单（通过订单号、姓名、电话、地址来判断）
+    const key = `${orderNumber}-${name}-${phone}-${address}`;
 
     if (!orderMap.has(key)) {
-      orderMap.set(key, {});
+      orderMap.set(key, {
+        orderNumber,
+        name,
+        phone,
+        address,
+        products: new Map(),
+      });
     }
 
-    const products = orderMap.get(key);
-    products[product] = (products[product] || 0) + 1; // 累加商品數量
+    const order = orderMap.get(key);
+
+    if (!order.products.has(product)) {
+      order.products.set(product, 0);
+    }
+
+    order.products.set(product, order.products.get(product) + quantity);
   });
 
-  // 整合輸出結果
-  const output = Array.from(orderMap.entries())
-    .map(([key, products]) => {
-      const productSummary = Object.entries(products)
-        .map(([product, count]) => `${product}*${count}`) // 商品部分用 * 數量標示
-        .join('_'); // 商品部分用 _ 連接
-      return `${key}    ${productSummary}__`; // 每行用 4 個空白鍵分隔，最後附加 __
+  // 合并输出结果
+  const output = Array.from(orderMap.values())
+    .map(({ orderNumber, name, phone, address, products }) => {
+      const productDetails = Array.from(products.entries())
+        .map(([product, totalQuantity]) => `${product}*${totalQuantity}`)
+        .join('_');
+      return `${orderNumber}\t${name}  ${phone}\t${address}\t${productDetails}__`;
     })
     .join('\n');
 
-  outputText.value = output; // 更新輸出框
-  showNotificationWithDelay('Order Merged Successfully!', 'success');
+  outputText.value = output; // 更新输出框
+  showNotificationWithDelay('Order Merged Successfully！', 'success');
 };
 
-// 清除內容
+// 清空内容
 const handleClear = () => {
   inputText.value = '';
   outputText.value = '';
@@ -118,14 +136,14 @@ const handleClear = () => {
 
 <style scoped>
 textarea {
-  width: 100%; /* Full width on small screens0 */
+  width: 100%; /* Full width on small screens */
   resize: none;
   height: 400px;
   border: 2px solid #000;
 }
 @media (max-width: 767px) {
   textarea, .output {
-    height: 250px; /* Half the height on small screens0 */
+    height: 250px; /* Half the height on small screens */
   }
 }
 textarea:focus {
@@ -141,7 +159,6 @@ textarea:focus {
   white-space: pre-line;
   overflow-y: auto;
 }
-/* 在中型設備及以下時，將高度設定為一半 */
 @media (max-width: 767px) {
   .output {
     height: 250px; /* Half the height on small screens */
@@ -171,7 +188,6 @@ textarea:focus {
 .cls:hover {
   background-color: #ae0000;
 }
-/* 動態通知樣式 */
 .notification {
   position: fixed;
   bottom: 50px;
