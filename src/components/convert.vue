@@ -182,8 +182,7 @@ const exportToExcel = () => {
 
   // 定义表头
   const header = [
-    "*客戶訂單號", "*收件方姓名", "收件方電話", "*收件方詳細地址", 
-    "*商品名稱", "*商品數量", "包裹備註", "代收貨款", "月結帳號", "附加服務內容"
+    "*客戶訂單號","*收件方姓名","收件方電話","*收件方詳細地址","*商品名稱","*商品數量","包裹備註","代收貨款","月結帳號","附加服務內容"
   ];
 
   // 构建数据行
@@ -247,12 +246,19 @@ const exportToExcel = () => {
     }
   }
 
+  // 获取当前日期（格式：yyyyMMdd）
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0'); // 获取月份，月份从0开始，需要加1
+  const day = String(today.getDate()).padStart(2, '0'); // 获取日期，确保是2位数
+  const dateString = `${year}${month}${day}`;
+
   // 创建工作簿并添加工作表
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Orders');
 
-  // 导出 Excel 文件
-  XLSX.writeFile(wb, 'orders_template.xlsx');
+  // 导出 Excel 文件，文件名为当前日期_Orders_template.xlsx
+  XLSX.writeFile(wb, `${dateString}_orders_template.xlsx`);
 };
 
 
