@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue';
+import * as XLSX from 'xlsx'; // 导入 XLSX 库
 
 const inputText = ref(''); // 输入框内容
 const outputText = ref(''); // 输出结果
@@ -25,10 +26,8 @@ const showNotificationWithDelay = (message, type) => {
 
 // 固定列数检查
 const validateLine = (line) => {
-  // 按 Tab 分隔
-  const parts = line.split(/\t+/);
+  const parts = line.split(/\t+/); // 按 Tab 分隔
 
-  // 如果列数不足 11
   if (parts.length < 11) {
     outputText.value = '';
     return 'Error: Too few columns (less than 11)';
@@ -42,7 +41,6 @@ const validateLine = (line) => {
     return 'Error: Order number must contain only letters or digits';
   }
 
-  // 验证电话号码（假设电话号码在第 5 列）是否是数字
   const phone = parts[4]; // 电话号码在第 5 列（索引为 4）
   const phoneRegex = /^\d+$/; // 正则表达式，要求只包含数字
 
@@ -51,7 +49,6 @@ const validateLine = (line) => {
     return 'Error: Phone number must contain only digits';
   }
 
-  // 验证 "數量"（假设在第 10 列）是否是数字
   const quantity = parts[10]; // "數量" 在第 10 列（索引 9）
   const quantityRegex = /^\d+$/; // 正则表达式，要求只包含数字
 
@@ -60,13 +57,10 @@ const validateLine = (line) => {
     return 'Error: Quantity must be a number';
   }
 
-  // 如果列数大于 11，我们需要合并地址字段
   if (parts.length > 11) {
-    // 假设地址字段在第 6 列开始，将地址字段和后面的内容合并
-    const address = parts.slice(5, parts.length - 2).join(' '); // 地址是第6列到倒数第二列
-    const otherColumns = parts.slice(0, 5).concat(address, parts.slice(parts.length - 2)); // 合并地址后，确保列数是 11
+    const address = parts.slice(5, parts.length - 2).join(' '); // 合并地址字段
+    const otherColumns = parts.slice(0, 5).concat(address, parts.slice(parts.length - 2)); // 合并后列数为 11
 
-    // 检查合并后的列数
     if (otherColumns.length !== 11) {
       outputText.value = '';
       return 'Error: Too many columns (greater than 11)';
@@ -75,9 +69,6 @@ const validateLine = (line) => {
 
   return null; // 如果列数等于11，没有错误
 };
-
-
-
 
 // 合并订单逻辑
 const handleOrderMerge = () => {
@@ -96,7 +87,6 @@ const handleOrderMerge = () => {
     return validationError ? `Line ${index + 1}: ${validationError}` : null;
   }).filter(error => error !== null); // 过滤出有错误的行
 
-  // 如果有无效行，显示错误通知
   if (invalidLines.length > 0) {
     outputText.value = '';
     showNotificationWithDelay(invalidLines.join('\n'), 'error'); // 传递换行错误信息
@@ -114,7 +104,6 @@ const handleOrderMerge = () => {
     const product = parts[9]; // 商品名称
     const quantity = parseInt(parts[10], 10); // 商品数量
 
-    // 生成一个唯一的键，判断是否存在相同的订单（通过订单号、姓名、电话、地址来判断）
     const key = `${orderNumber}-${name}-${phone}-${address}`;
 
     if (!orderMap.has(key)) {
@@ -136,18 +125,134 @@ const handleOrderMerge = () => {
     order.products.set(product, order.products.get(product) + quantity);
   });
 
-  // 合并输出结果
   const output = Array.from(orderMap.values())
     .map(({ orderNumber, name, phone, address, products }) => {
       const productDetails = Array.from(products.entries())
         .map(([product, totalQuantity]) => `${product}*${totalQuantity}`)
         .join('_');
-      return `${orderNumber}\t${name}  ${phone}\t${address}\t${productDetails}__`;
+      return `${orderNumber}\t${name}\t${phone}\t${address}\t${productDetails}__`; // 姓名和电话分开
     })
     .join('\n');
 
   outputText.value = output; // 更新输出框
   showNotificationWithDelay('Order Merged Successfully！', 'success');
+};
+
+
+const exportToExcel = () => {
+  // 检查输出框是否有内容
+  if (!outputText.value.trim()) {
+    showNotificationWithDelay('The output box is empty, please merge the orders first.', 'error');
+    return;
+  }
+
+  const lines = inputText.value.trim().split('\n');
+  const orderMap = new Map();
+
+  // 遍历每一行数据并构建订单
+  lines.forEach((line) => {
+    const parts = line.trim().split(/\t/);
+    const orderNumber = parts[0];
+    const name = parts[3];
+    const phone = parts[4];
+    const address = parts[5];
+    const product = parts[9];
+    const quantity = parseInt(parts[10], 10);
+
+    const key = `${orderNumber}-${name}-${phone}-${address}`;
+
+    if (!orderMap.has(key)) {
+      orderMap.set(key, {
+        orderNumber,
+        name,
+        phone,
+        address,
+        products: new Map(),
+      });
+    }
+
+    const order = orderMap.get(key);
+
+    if (!order.products.has(product)) {
+      order.products.set(product, 0);
+    }
+
+    order.products.set(product, order.products.get(product) + quantity);
+  });
+
+  // 定义表头
+  const header = [
+    "*客戶訂單號", "*收件方姓名", "收件方電話", "*收件方詳細地址", 
+    "*商品名稱", "*商品數量", "包裹備註", "代收貨款", "月結帳號", "附加服務內容"
+  ];
+
+  // 构建数据行
+  const data = Array.from(orderMap.values()).map(({ orderNumber, name, phone, address, products }) => {
+    const productDetails = Array.from(products.entries())
+      .map(([product, totalQuantity]) => `${product}*${totalQuantity}`)
+      .join('_');
+    return [orderNumber, name, phone, address, productDetails, '', '', '', ''];
+  });
+
+  const sheetData = [header, ...data];
+
+  // 创建工作表
+  const ws = XLSX.utils.aoa_to_sheet(sheetData);
+
+  // 设置列宽
+  ws['!cols'] = [
+    { wch: 20 }, { wch: 20 }, { wch: 15 }, { wch: 40 }, { wch: 30 }, { wch: 15 },
+    { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 20 }
+  ];
+
+  // 设置表头样式
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  
+  // 表头样式（第0行）
+  for (let col = range.s.c; col <= range.e.c; col++) {
+    const cell = ws[XLSX.utils.encode_cell({ r: 0, c: col })];
+    if (cell) {
+      cell.s = {
+        font: { bold: true, sz: 14, color: { rgb: "FFFFFF" } }, // 白色字体
+        fill: { fgColor: { rgb: "4F81BD" } }, // 蓝色背景
+        alignment: { horizontal: "center", vertical: "center" },
+        border: {
+          top: { style: 'thin', color: { rgb: "000000" } },
+          right: { style: 'thin', color: { rgb: "000000" } },
+          bottom: { style: 'thin', color: { rgb: "000000" } },
+          left: { style: 'thin', color: { rgb: "000000" } }
+        }
+      };
+    }
+  }
+
+  // 数据行样式
+  for (let row = range.s.r + 1; row <= range.e.r; row++) {
+    const rowStyle = row % 2 === 0 ? { fill: { fgColor: { rgb: "F2F2F2" } } } : {}; // 偶数行灰色背景
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      const cell = ws[XLSX.utils.encode_cell({ r: row, c: col })];
+      if (cell) {
+        cell.s = {
+          font: { sz: 12 },
+          alignment: { horizontal: "left", vertical: "center" },
+          border: {
+            top: { style: 'thin', color: { rgb: "000000" } },
+            right: { style: 'thin', color: { rgb: "000000" } },
+            bottom: { style: 'thin', color: { rgb: "000000" } },
+            left: { style: 'thin', color: { rgb: "000000" } }
+          },
+          ...rowStyle // 应用交替行样式
+        };
+      }
+    }
+  }
+
+  // 创建工作簿并添加工作表
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Orders');
+
+  // 导出 Excel 文件
+  XLSX.writeFile(wb, 'orders_template.xlsx');
 };
 
 
@@ -186,6 +291,7 @@ const handleClear = () => {
     <div class="row">
       <div class="col-12 d-flex justify-content-center mt-5">
         <button class="convert" @click="handleOrderMerge">Merge Orders</button>
+        <button class="export ms-3" @click="exportToExcel">Export to Excel</button> <!-- 导出按钮 -->
         <button class="cls ms-3" @click="handleClear">Clear</button>
       </div>
     </div>
@@ -223,7 +329,8 @@ textarea:focus {
   }
 }
 .convert,
-.cls {
+.cls,
+.export {
   border-radius: 50px;
   padding: 10px 20px;
   color: white;
@@ -245,6 +352,12 @@ textarea:focus {
 }
 .cls:hover {
   background-color: #ae0000;
+}
+.export {
+  background-color: #007bff;
+}
+.export:hover {
+  background-color: #0056b3;
 }
 .notification {
   position: fixed;
