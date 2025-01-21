@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import * as XLSX from 'xlsx'; // 导入 XLSX 库
+import ExcelJS from 'exceljs';
 
 const inputText = ref(''); // 输入框内容
 const outputText = ref(''); // 输出结果
@@ -139,6 +139,7 @@ const handleOrderMerge = () => {
 };
 
 
+
 const exportToExcel = () => {
   // 检查输出框是否有内容
   if (!outputText.value.trim()) {
@@ -152,114 +153,151 @@ const exportToExcel = () => {
   // 遍历每一行数据并构建订单
   lines.forEach((line) => {
     const parts = line.trim().split(/\t/);
-    const orderNumber = parts[0];
-    const name = parts[3];
-    const phone = parts[4];
-    const address = parts[5];
-    const product = parts[9];
-    const quantity = parseInt(parts[10], 10);
+    const [orderNumber, , , name, phone, address, , , , product, quantity] = parts;
 
     const key = `${orderNumber}-${name}-${phone}-${address}`;
 
     if (!orderMap.has(key)) {
-      orderMap.set(key, {
-        orderNumber,
-        name,
-        phone,
-        address,
-        products: new Map(),
-      });
+      orderMap.set(key, { orderNumber, name, phone, address, products: new Map() });
     }
 
     const order = orderMap.get(key);
-
+    const currentQuantity = parseInt(quantity, 10) || 0;
+    
     if (!order.products.has(product)) {
       order.products.set(product, 0);
     }
 
-    order.products.set(product, order.products.get(product) + quantity);
+    order.products.set(product, order.products.get(product) + currentQuantity);
   });
 
   // 定义表头
   const header = [
-    "*客戶訂單號","*收件方姓名","收件方電話","*收件方詳細地址","*商品名稱","*商品數量","包裹備註","代收貨款","月結帳號","附加服務內容"
+    "*客戶訂單號", "*收件方姓名", "收件方電話", "*收件方詳細地址", "*商品名稱", "*商品數量", "包裹備註", "代收貨款", "月結帳號", "附加服務內容"
   ];
 
   // 构建数据行
   const data = Array.from(orderMap.values()).map(({ orderNumber, name, phone, address, products }) => {
     const productDetails = Array.from(products.entries())
-      .map(([product, totalQuantity]) => `${product}*${totalQuantity}`)
+      .map(([product, totalQuantity]) => `${product}*${totalQuantity}`) // 保留商品名稱與原始數量
       .join('_');
-    return [orderNumber, name, phone, address, productDetails, '', '', '', ''];
+    return [
+      orderNumber,  // 客戶訂單號
+      name,         // 收件方姓名
+      phone,        // 收件方電話
+      address,      // 收件方詳細地址
+      productDetails, // 商品名稱 (包含原始數量)
+      1,            // 商品數量固定為 1
+      '', '', '', '' // 其他列为空
+    ];
   });
 
   const sheetData = [header, ...data];
 
-  // 创建工作表
-  const ws = XLSX.utils.aoa_to_sheet(sheetData);
+  // 创建一个新的工作簿
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Orders');
 
   // 设置列宽
-  ws['!cols'] = [
-    { wch: 20 }, { wch: 20 }, { wch: 15 }, { wch: 40 }, { wch: 30 }, { wch: 15 },
-    { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 20 }
+  worksheet.columns = [
+    { width: 20 }, { width: 15 }, { width: 15 }, { width: 50 }, { width: 40 }, { width: 15 },
+    { width: 20 }, { width: 20 }, { width: 20 }, { width: 20 }
   ];
 
-  // 设置表头样式
-  const range = XLSX.utils.decode_range(ws['!ref']);
-  
-  // 表头样式（第0行）
-  for (let col = range.s.c; col <= range.e.c; col++) {
-    const cell = ws[XLSX.utils.encode_cell({ r: 0, c: col })];
-    if (cell) {
-      cell.s = {
-        font: { bold: true, sz: 14, color: { rgb: "FFFFFF" } }, // 白色字体
-        fill: { fgColor: { rgb: "4F81BD" } }, // 蓝色背景
-        alignment: { horizontal: "center", vertical: "center" },
-        border: {
-          top: { style: 'thin', color: { rgb: "000000" } },
-          right: { style: 'thin', color: { rgb: "000000" } },
-          bottom: { style: 'thin', color: { rgb: "000000" } },
-          left: { style: 'thin', color: { rgb: "000000" } }
-        }
-      };
-    }
-  }
+  // 添加表头
+  worksheet.addRow(header).eachCell((cell, colNumber) => {
+    // 设置统一的字体：微软雅黑
+    cell.font = { name: 'Microsoft YaHei', bold: true, size: 10 };
 
-  // 数据行样式
-  for (let row = range.s.r + 1; row <= range.e.r; row++) {
-    const rowStyle = row % 2 === 0 ? { fill: { fgColor: { rgb: "F2F2F2" } } } : {}; // 偶数行灰色背景
-    for (let col = range.s.c; col <= range.e.c; col++) {
-      const cell = ws[XLSX.utils.encode_cell({ r: row, c: col })];
-      if (cell) {
-        cell.s = {
-          font: { sz: 12 },
-          alignment: { horizontal: "left", vertical: "center" },
-          border: {
-            top: { style: 'thin', color: { rgb: "000000" } },
-            right: { style: 'thin', color: { rgb: "000000" } },
-            bottom: { style: 'thin', color: { rgb: "000000" } },
-            left: { style: 'thin', color: { rgb: "000000" } }
-          },
-          ...rowStyle // 应用交替行样式
-        };
-      }
+    // 第一栏
+    if (colNumber === 1) {
+      cell.font.color = { argb: "FF0000" }; // 红字
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "FFF1E1" } }; // 淡米色背景
     }
-  }
+    // 第二栏
+    else if (colNumber === 2) {
+      cell.font.color = { argb: "FF0000" }; // 红字
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "FAD0D0" } }; // 淡红色背景
+    }
+    // 第三栏
+    else if (colNumber === 3) {
+      cell.font.color = { argb: "000000" }; // 黑字
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "FAD0D0" } }; // 淡红色背景
+    }
+    // 第四栏
+    else if (colNumber === 4) {
+      cell.font.color = { argb: "FF0000" }; // 红字
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "FAD0D0" } }; // 淡红色背景
+    }
+    // 第五栏
+    else if (colNumber === 5) {
+      cell.font.color = { argb: "FF0000" }; // 红字
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "FFF1E1" } }; // 淡米色背景
+    }
+    // 第六栏
+    else if (colNumber === 6) {
+      cell.font.color = { argb: "FF0000" }; // 红字
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "FFF1E1" } }; // 淡米色背景
+    }
+    // 第七栏
+    else if (colNumber === 7) {
+      cell.font.color = { argb: "FF0000" }; // 红字
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "D9E4F4" } }; // 淡蓝色背景
+    }
+    // 第八、九、十栏
+    else if (colNumber >= 8 && colNumber <= 10) {
+      cell.font.color = { argb: "000000" }; // 黑字
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "D9EAD3" } }; // 淡绿色背景
+    }
+
+    // 其他统一设置
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+  });
+
+  // 设置表头行的高度为 30
+  worksheet.getRow(1).height = 30;
+
+
+
+  // 添加数据行
+  data.forEach((row) => {
+    const newRow = worksheet.addRow(row);
+
+    // 设置每行的高度
+    newRow.height = 50; // 可以根据需要调整行高
+
+    newRow.eachCell((cell, colNumber) => {
+      cell.font = { size: 10 };
+      cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+
+      if (colNumber === 4 || colNumber === 5) {
+        // d 列和 e 列水平靠左
+        cell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+      } else {
+        // 其他列水平居中
+        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      }
+    });
+  });
+
+
 
   // 获取当前日期（格式：yyyyMMdd）
   const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0'); // 获取月份，月份从0开始，需要加1
-  const day = String(today.getDate()).padStart(2, '0'); // 获取日期，确保是2位数
-  const dateString = `${year}${month}${day}`;
-
-  // 创建工作簿并添加工作表
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Orders');
+  const dateString = today.toISOString().slice(0, 10).replace(/-/g, '');
 
   // 导出 Excel 文件，文件名为当前日期_Orders_template.xlsx
-  XLSX.writeFile(wb, `${dateString}_orders_template.xlsx`);
+  workbook.xlsx.writeBuffer().then((buffer) => {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${dateString}_orders_template.xlsx`;
+    link.click();
+  });
 };
+
+
 
 
 // 清空内容
@@ -278,7 +316,7 @@ const handleClear = () => {
     >
       <div v-html="notificationMessage"></div> <!-- 使用 v-html 来渲染带 HTML 的内容 -->
     </div>
-
+    
     <!-- 输入与输出区 -->
     <div class="row mt-5">
       <div class="col-12 col-md-6 d-flex justify-content-center">
