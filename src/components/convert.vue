@@ -407,7 +407,7 @@ textarea:focus {
   position: fixed;
   bottom: 50px;
   right: -300px;
-  width: 400px;
+  width: 350px;
   padding: 15px;
   border-radius: 5px;
   font-size: 16px;
