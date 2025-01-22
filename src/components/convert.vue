@@ -34,7 +34,7 @@ const validateLine = (line) => {
   }
 
   const orderNumber = parts[0]; 
-  const orderNumberRegex = /^[A-Za-z0-9]+$/; // 正则表达式，要求只包含英文和数字
+  const orderNumberRegex = /^[a-zA-Z0-9#]*$/ ; // 正则表达式，要求只包含英文和数字
 
   if (!orderNumberRegex.test(orderNumber)) {
     outputText.value = '';
