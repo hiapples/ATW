@@ -58,18 +58,21 @@ const validateLine = (line) => {
   }
 
   if (parts.length > 11) {
-    const address = parts.slice(5, parts.length - 2).join(' '); // 合并地址字段
-    const otherColumns = parts.slice(0, 5).concat(address, parts.slice(parts.length - 2)); // 合并后列数为 11
-
-    if (otherColumns.length !== 11) {
-      outputText.value = '';
-      return 'Error: Too many columns (greater than 11)';
-    }
+    outputText.value = '';
+    return 'Error: Too many columns (greater than 11)';
   }
 
   return null; // 如果列数等于11，没有错误
 };
 
+
+//地址標準化
+function normalizeAddress(address) {
+  return address
+    .replace(/^台灣\s*\d{3}\s*/, '') // 移除前缀 "台灣" 和邮递区号
+    .replace(/\s+/g, '')             // 移除所有空格
+    .trim();                         // 去掉首尾空格
+}
 // 合并订单逻辑
 const handleOrderMerge = () => {
   if (!inputText.value.trim()) {
@@ -100,7 +103,7 @@ const handleOrderMerge = () => {
     const orderNumber = parts[0]; // 订单号
     const name = parts[3]; // 姓名
     const phone = parts[4]; // 电话
-    const address = parts[5]; // 地址
+    const address = normalizeAddress(parts[5]); // 地址
     const product = parts[9]; // 商品名称
     const quantity = parseInt(parts[10], 10); // 商品数量
 
@@ -153,7 +156,8 @@ const exportToExcel = () => {
   // 遍历每一行数据并构建订单
   lines.forEach((line) => {
     const parts = line.trim().split(/\t/);
-    const [orderNumber, , , name, phone, address, , , , product, quantity] = parts;
+    const address = normalizeAddress(parts[5]); // 假设 `address` 在 `parts` 数组中的第 6 个位置（索引为 5）
+    const [orderNumber, , , name, phone, , , , , product, quantity] = parts;
 
     const key = `${orderNumber}-${name}-${phone}-${address}`;
 
