@@ -33,7 +33,7 @@ const validateLine = (line) => {
     return 'Error: Too few columns (less than 11)';
   }
 
-  const orderNumber = parts[0]; 
+  const orderNumber = parts[0];  //銷貨單號
   const orderNumberRegex = /^[a-zA-Z0-9#]*$/ ; // 正则表达式，要求只包含英文和数字
 
   if (!orderNumberRegex.test(orderNumber)) {
@@ -41,7 +41,7 @@ const validateLine = (line) => {
     return 'Error: Order number must contain only letters or digits';
   }
 
-  const phone = parts[4]; // 电话号码在第 5 列（索引为 4）
+  const phone = parts[4]; // "电话号码"在第 5 列（索引为 4）
   const phoneRegex = /^\d+$/; // 正则表达式，要求只包含数字
 
   if (!phoneRegex.test(phone)) {
@@ -50,7 +50,7 @@ const validateLine = (line) => {
   }
 
   const quantity = parts[10]; // "數量" 在第 10 列（索引 9）
-  const quantityRegex = /^\d+$/; // 正则表达式，要求只包含数字
+  const quantityRegex =  /^[1-9]\d*$/; // 正则表达式，要求只包含数字
 
   if (!quantityRegex.test(quantity)) {
     outputText.value = '';
