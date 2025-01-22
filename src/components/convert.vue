@@ -204,7 +204,7 @@ const exportToExcel = () => {
 
   // 设置列宽
   worksheet.columns = [
-    { width: 20 }, { width: 15 }, { width: 15 }, { width: 50 }, { width: 40 }, { width: 15 },
+    { width: 22 }, { width: 15 }, { width: 15 }, { width: 50 }, { width: 40 }, { width: 13 },
     { width: 20 }, { width: 20 }, { width: 20 }, { width: 20 }
   ];
 
