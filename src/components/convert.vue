@@ -65,14 +65,21 @@ const validateLine = (line) => {
   return null; // 如果列数等于11，没有错误
 };
 
+//+入空白 空值
+const handleInput = () => {
+  // 使用正則表達式將兩個 Tab 中間加上空格
+  inputText.value = inputText.value.replace(/\t\t/g, '\t \t');
+};
 
 //地址標準化
 function normalizeAddress(address) {
   return address
     .replace(/^台灣\s*\d{3}\s*/, '') // 移除前缀 "台灣" 和邮递区号
     .replace(/\s+/g, '')             // 移除所有空格
+    .replace(/,/g, '')               // 移除所有逗号
     .trim();                         // 去掉首尾空格
 }
+
 // 合并订单逻辑
 const handleOrderMerge = () => {
   if (!inputText.value.trim()) {
@@ -327,6 +334,7 @@ const handleClear = () => {
         <textarea
           class="form-control"
           v-model="inputText"
+          @input="handleInput"
           placeholder="Enter orders (one per line)..."
         ></textarea>
       </div>
