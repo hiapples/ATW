@@ -33,8 +33,8 @@ const validateLine = (line) => {
     return 'Error: Too few columns (less than 11)';
   }
 
-  const orderNumber = parts[0];  //銷貨單號
-  const orderNumberRegex = /^[a-zA-Z0-9#]*$/ ; // 正则表达式，要求只包含英文和数字
+  const orderNumber = parts[0]; // 銷貨單號
+  const orderNumberRegex = /^[a-zA-Z0-9#]*$/; // 正则表达式，要求只包含英文和数字
 
   if (!orderNumberRegex.test(orderNumber)) {
     outputText.value = '';
@@ -49,8 +49,8 @@ const validateLine = (line) => {
     return 'Error: Phone number must contain only digits';
   }
 
-  const quantity = parts[10]; // "數量" 在第 10 列（索引 9）
-  const quantityRegex =  /^[1-9]\d*$/; // 正则表达式，要求只包含数字
+  const quantity = parts[10]; // "數量" 在第 11 列（索引 10）
+  const quantityRegex = /^[1-9]\d*$/; // 正则表达式，要求只包含数字
 
   if (!quantityRegex.test(quantity)) {
     outputText.value = '';
@@ -62,14 +62,52 @@ const validateLine = (line) => {
     return 'Error: Too many columns (greater than 11)';
   }
 
-  return null; // 如果列数等于11，没有错误
+
+  return null; // 如果没有错误
 };
 
-//+入空白 空值
+
+//輸入處理
 const handleInput = () => {
   // 使用正則表達式將兩個 Tab 中間加上空格
   inputText.value = inputText.value.replace(/\t\t/g, '\t \t');
+  // 按换行符拆分输入内容为行
+  let lines = inputText.value.split('\n');
+
+  // 初始化结果数组
+  let result = [];
+  let tempLine = '';
+
+  lines.forEach((line) => {
+    // 去掉前后空格
+    line = line.trim();
+
+    // 检查行是否以数字结尾（即是完整记录）
+    if (/.*\d$/.test(line)) {
+      // 如果当前有临时行，合并到结果中
+      if (tempLine) {
+        tempLine += ' ' + line; // 合并记录
+        result.push(tempLine.trim());
+        tempLine = ''; // 清空临时行
+      } else {
+        // 如果没有临时行，直接加入结果
+        result.push(line);
+      }
+    } else {
+      // 行内数据需要合并到临时行
+      tempLine += ' ' + line;
+    }
+  });
+
+  // 如果最后有剩余的临时行，加入结果
+  if (tempLine) {
+    result.push(tempLine.trim());
+  }
+
+  // 将结果数组合并为字符串，保留记录间的换行符
+  inputText.value = result.join('\n');
 };
+
 
 //地址標準化
 function normalizeAddress(address) {
