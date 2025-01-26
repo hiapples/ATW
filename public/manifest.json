@@ -1,6 +1,6 @@
 {
   "name": "Merge Orders",
-  "short_name": "Orders",
+  "short_name": "Merge Orders",
   "description": "An example PWA app for managing orders.",
   "start_url": "/index.html",
   "display": "standalone",
