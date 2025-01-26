@@ -1,6 +1,6 @@
 {
-    "name": "ATW",
-    "short_name": "ATW",
+    "name": "Merge Orders",
+    "short_name": "Merge Orders",
     "description": "A PWA example app",
     "start_url": "/",
     "display": "standalone",
