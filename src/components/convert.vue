@@ -309,8 +309,43 @@ const exportToExcel = () => {
 
 
   // 隐藏第 2 和第 3 列
-  worksheet.addRow(["A2", "B2", "C2", "D2", "E2", "F2", "G2", "H2", "I2", "J2"]); // 第 2 行（要隐藏）
-  worksheet.addRow(["A3", "B3", "C3", "D3", "E3", "F3", "G3", "H3", "I3", "J3"]); // 第 3 行（要隐藏）
+  const row = worksheet.addRow([
+    "必填，支持輸入字母和數字，max=64", 
+    "必填，max=100", 
+    "收件方手機號和固定電話至少填寫一項，max=20", 
+    "必填，max=200", 
+    "必填，max=100", 
+    "必填，僅支持輸入數字，max=17", 
+    "",
+    "COD-代收貨款，非必選", 
+    "若附加服務1選擇了COD，則卡號必填，max = 30", 
+    "max = 30"
+  ]);
+  row.eachCell((cell) => {
+    cell.alignment = { vertical: 'middle', wrapText: true }; // Align vertically and wrap text
+  });
+    
+  const row2 = worksheet.addRow([
+    "test2017062816", 
+    "Li si1", 
+    "178888****", 
+    "777 Henderson Blvd, South Bay,1B,Folcroft, PA", 
+    "Milk", 
+    "", 
+    "", 
+    "", 
+    ""
+  ]);
+  row2.eachCell((cell, colNumber) => {
+    if (colNumber <= 3) {
+      // Horizontally center the first three columns
+      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    } else {
+      // For the remaining columns, keep the previous vertical alignment and wrapping
+      cell.alignment = { vertical: 'middle', wrapText: true };
+    }
+  });
+
   worksheet.getRow(2).hidden = true;
   worksheet.getRow(3).hidden = true;
 
