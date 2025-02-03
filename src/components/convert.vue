@@ -308,7 +308,10 @@ const exportToExcel = () => {
   worksheet.getRow(1).height = 30;
 
 
-
+  // 添加两行空行
+  worksheet.addRow([]);
+  worksheet.addRow([]);
+  
   // 添加数据行
   data.forEach((row) => {
     const newRow = worksheet.addRow(row);
