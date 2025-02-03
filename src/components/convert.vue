@@ -308,10 +308,12 @@ const exportToExcel = () => {
   worksheet.getRow(1).height = 30;
 
 
-  // 添加两行空行
-  worksheet.addRow([]);
-  worksheet.addRow([]);
-  
+  // 隐藏第 2 和第 3 列
+  worksheet.addRow(["A2", "B2", "C2", "D2", "E2", "F2", "G2", "H2", "I2", "J2"]); // 第 2 行（要隐藏）
+  worksheet.addRow(["A3", "B3", "C3", "D3", "E3", "F3", "G3", "H3", "I3", "J3"]); // 第 3 行（要隐藏）
+  worksheet.getRow(2).hidden = true;
+  worksheet.getRow(3).hidden = true;
+
   // 添加数据行
   data.forEach((row) => {
     const newRow = worksheet.addRow(row);
