@@ -181,8 +181,9 @@ const handleOrderMerge = () => {
   // 计算合并后的运单数量
   const waybillCount = orderMap.size;
 
-  // 添加商品统计
+  // 添加商品统计，并按名称排序
   const productSummaryOutput = Array.from(productSummary.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))  // 按商品名称排序
     .map(([product, totalQuantity]) => `${product} : ${totalQuantity}`)
     .join('\n');
 
