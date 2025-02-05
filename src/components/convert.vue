@@ -66,7 +66,6 @@ const validateLine = (line) => {
   return null; // 如果没有错误
 };
 
-
 //輸入處理
 const handleInput = () => {
   // 使用正則表達式將兩個 Tab 中間加上空格
@@ -108,7 +107,6 @@ const handleInput = () => {
   inputText.value = result.join('\n');
 };
 
-
 //地址標準化
 function normalizeAddress(address) {
   return address
@@ -142,6 +140,7 @@ const handleOrderMerge = () => {
   }
 
   const orderMap = new Map(); // 存储订单数据
+  const productSummary = new Map(); // 统计所有商品总数量
 
   lines.forEach((line) => {
     const parts = line.trim().split(/\t/); // 以 Tab 分隔每行
@@ -171,18 +170,25 @@ const handleOrderMerge = () => {
     }
 
     order.products.set(product, order.products.get(product) + quantity);
+
+    // 统计商品总数
+    if (!productSummary.has(product)) {
+      productSummary.set(product, 0);
+    }
+    productSummary.set(product, productSummary.get(product) + quantity);
   });
 
-  const output = Array.from(orderMap.values())
-    .map(({ orderNumber, name, phone, address, products }) => {
-      const productDetails = Array.from(products.entries())
-        .map(([product, totalQuantity]) => `${product}*${totalQuantity}`)
-        .join('_');
-      return `${orderNumber}\t${name}\t${phone}\t${address}\t${productDetails}__`; // 姓名和电话分开
-    })
+  // 计算合并后的运单数量
+  const waybillCount = orderMap.size;
+
+  // 添加商品统计
+  const productSummaryOutput = Array.from(productSummary.entries())
+    .map(([product, totalQuantity]) => `${product} : ${totalQuantity}`)
     .join('\n');
 
-  outputText.value = output; // 更新输出框
+  const finalOutput = `【運單總數】\n${waybillCount} 單\n\n【商品統計】\n${productSummaryOutput}`;
+
+  outputText.value = finalOutput;
   showNotificationWithDelay('Order Merged Successfully！', 'success');
 };
 
@@ -385,9 +391,6 @@ const exportToExcel = () => {
     link.click();
   });
 };
-
-
-
 
 // 清空内容
 const handleClear = () => {
