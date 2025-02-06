@@ -123,7 +123,7 @@ const handleOrderMerge = () => {
     showNotificationWithDelay('Please enter content...', 'error');
     return;
   }
-
+  isModalVisible.value = true;
   const lines = inputText.value.trim().split('\n'); // 分割每一行
 
   // 验证每行格式
@@ -187,7 +187,7 @@ const handleOrderMerge = () => {
     .map(([product, totalQuantity]) => `${product} : ${totalQuantity}`)
     .join('\n');
 
-  const finalOutput = `【運單總數】\n${waybillCount} 單\n\n【商品統計】\n${productSummaryOutput}`;
+  const finalOutput = `【Total Orders】\n${waybillCount} Unit\n\n【Total Product】\n${productSummaryOutput}`;
 
   outputText.value = finalOutput;
   showNotificationWithDelay('Order Merged Successfully！', 'success');
@@ -195,13 +195,36 @@ const handleOrderMerge = () => {
 
 
 
-const exportToExcel = () => {
-  // 检查输出框是否有内容
-  if (!outputText.value.trim()) {
-    showNotificationWithDelay('The output box is empty, please merge the orders first.', 'error');
-    return;
-  }
+const ProductToExcel = () => {
+  // 创建一个新的工作簿
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Product');
 
+  // 定义表头
+  const header = ["Total Orders"];
+
+  // 添加表头
+  worksheet.addRow(header);
+
+  // 添加数据行
+  worksheet.addRow(["test還沒做完"]);
+
+
+  // 获取当前日期（格式：yyyyMMdd）
+  const today = new Date();
+  const dateString = today.toISOString().slice(0, 10).replace(/-/g, '');
+
+  // 导出 Excel 文件，文件名为当前日期_Orders_template.xlsx
+  workbook.xlsx.writeBuffer().then((buffer) => {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${dateString}_product_template.xlsx`;
+    link.click();
+  });
+};
+
+const OrdersToExcel = () => {
   const lines = inputText.value.trim().split('\n');
   const orderMap = new Map();
 
@@ -247,8 +270,6 @@ const exportToExcel = () => {
       '', '', '', '' // 其他列为空
     ];
   });
-
-  const sheetData = [header, ...data];
 
   // 创建一个新的工作簿
   const workbook = new ExcelJS.Workbook();
@@ -393,10 +414,26 @@ const exportToExcel = () => {
   });
 };
 
+
+
+// 控制modal彈出
+const isModalVisible = ref(false);
+// 打開 modal
+const handleModal = () => {
+  // 如果 outputText 為空，則不打開 modal
+  if (outputText.value === '') {
+    showNotificationWithDelay('The output box is empty, please merge the orders first.', 'error')
+  } else {
+    // 如果有值，則打開 modal
+    isModalVisible.value = true;
+  }
+};
+
 // 清空内容
 const handleClear = () => {
   inputText.value = '';
   outputText.value = '';
+  isModalVisible.value = false;
 };
 </script>
 
@@ -429,11 +466,26 @@ const handleClear = () => {
     <div class="row">
       <div class="col-12 d-flex justify-content-center mt-5">
         <button class="convert" @click="handleOrderMerge">Merge Orders</button>
-        <button class="export ms-3" @click="exportToExcel">Export to Excel</button> <!-- 导出按钮 -->
+        <button class="export ms-3" @click="handleModal" data-bs-toggle="modal" data-bs-target="#exampleModal">Export to Excel</button> <!-- 导出按钮 -->
         <button class="cls ms-3" @click="handleClear">Clear</button>
       </div>
     </div>
   </div>
+
+  <!-- Modal -->
+  <div v-if="isModalVisible" class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog d-flex align-items-center">
+        <div class="modal-content">
+          <div class="modal-header d-flex justify-content-center">
+            <h5 class="modal-title " id="exampleModalLabel">Export to Excel</h5>
+          </div>
+          <div class="modal-body d-flex justify-content-between">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="ProductToExcel">Product Statistics</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="OrdersToExcel">Orders</button>
+          </div>
+        </div>
+      </div>
+    </div>
 </template>
 
 <style scoped>
@@ -521,5 +573,19 @@ textarea:focus {
   background-color: #f8d7da;
   border: 1px solid #f5c6cb;
   color: #721c24;
+}
+.btn{
+  color: white;
+  width: 45%;
+  padding: 20px;
+}
+.modal {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+.modal-dialog{
+  margin-top: 200px;
+}
+.modal-body{
+  padding: 30px;
 }
 </style>
