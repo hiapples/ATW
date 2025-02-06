@@ -4,6 +4,7 @@ import ExcelJS from 'exceljs';
 
 const inputText = ref(''); // 输入框内容
 const outputText = ref(''); // 输出结果
+const waybillCount = ref(''); //運單數量
 const notificationMessage = ref(''); // 通知消息
 const notificationType = ref(''); // 通知类型
 const showNotification = ref(false); // 控制通知显示
@@ -179,7 +180,7 @@ const handleOrderMerge = () => {
   });
 
   // 计算合并后的运单数量
-  const waybillCount = orderMap.size;
+   waybillCount.value = orderMap.size;
 
   // 添加商品统计，并按名称排序
   const productSummaryOutput = Array.from(productSummary.entries())
@@ -187,7 +188,7 @@ const handleOrderMerge = () => {
     .map(([product, totalQuantity]) => `${product} : ${totalQuantity}`)
     .join('\n');
 
-  const finalOutput = `【Total Orders】\n${waybillCount} Unit\n\n【Total Product】\n${productSummaryOutput}`;
+  const finalOutput = `【Total Orders】\n${waybillCount.value} Unit\n\n【Total Product】\n${productSummaryOutput}`;
 
   outputText.value = finalOutput;
   showNotificationWithDelay('Order Merged Successfully！', 'success');
@@ -201,14 +202,13 @@ const ProductToExcel = () => {
   const worksheet = workbook.addWorksheet('Product');
 
   // 定义表头
-  const header = ["Total Orders"];
+  const header = ["Total Orders","Total Product"];
 
   // 添加表头
   worksheet.addRow(header);
 
   // 添加数据行
-  worksheet.addRow(["test還沒做完"]);
-
+  worksheet.addRow([waybillCount.value]);
 
   // 获取当前日期（格式：yyyyMMdd）
   const today = new Date();
