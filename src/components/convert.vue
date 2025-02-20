@@ -720,16 +720,13 @@ const handleClear = () => {
     
     <!-- 输入与输出区 -->
     <div class="row mt-5">
-      <div class="col-12 col-md-6 d-flex justify-content-center">
+      <div class="col-12 d-flex justify-content-center">
         <textarea
           class="form-control"
           v-model="inputText"
           @input="handleInput"
           placeholder="Enter orders (one per line)..."
         ></textarea>
-      </div>
-      <div class="col-12 mt-2 mt-md-0 col-md-6 d-flex justify-content-center">
-        <div class="output">{{ outputText }}</div> <!-- 显示 outputText -->
       </div>
     </div>
 
