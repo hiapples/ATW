@@ -308,6 +308,16 @@ const ProductToExcel = () => {
     cell.alignment = { horizontal: 'center', vertical: 'middle' };
     cell.font = { bold: true };
   });
+  // 設置下邊框
+  headerRow.getCell(1).border = {
+    bottom: { style: 'thick', color: { argb: '000000' } }
+  }; 
+  headerRow.getCell(2).border = {
+    bottom: { style: 'thick', color: { argb: '000000' } }
+  }; 
+  headerRow.getCell(3).border = {
+    bottom: { style: 'thick', color: { argb: '000000' } }
+  }; 
 
   const lines = outputText.value.split('\n');
   let isProductSection = false;
@@ -706,6 +716,9 @@ const handleClear = () => {
   outputText.value = '';
   isModalVisible.value = false;
 };
+
+
+
 </script>
 
 <template>
