@@ -12,6 +12,7 @@
     "esbuild": "^0.24.2",
     "exceljs": "^4.4.0",
     "file-saver": "^2.0.5",
+    "html2canvas": "^1.4.1",
     "vue": "^3.5.13",
     "xlsx": "^0.18.5",
     "xlsx-style": "^0.8.13"

@@ -281,12 +281,29 @@ const ProductToExcel = () => {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Product');
 
-  const header = ["產品名稱", "數量"];
+  const header = [`本次轉換運單數量: ${waybillCount.value}`, "產品名稱", "數量"];
   worksheet.columns = [
-    { width: 30 }, { width: 10 }
+    { width: 30 }, { width: 40 }, { width: 10 }
   ];
 
   const headerRow = worksheet.addRow(header);
+  headerRow.height = 30; // 設定行高為 30
+  //顏色
+  headerRow.getCell(1).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'F0F0F0' } // 設置淺灰色
+  };
+  headerRow.getCell(2).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'F0F0F0' } // 設置淺灰色
+  };
+  headerRow.getCell(3).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'F0F0F0' } // 設置淺灰色
+  };
   headerRow.eachCell((cell) => {
     cell.alignment = { horizontal: 'center', vertical: 'middle' };
     cell.font = { bold: true };
@@ -311,73 +328,156 @@ const ProductToExcel = () => {
     }
   });
 
-
+  let category1 = 0; // 紀錄次數
+  let category2 = 0;
+  let category3 = 0;
+  let totalQuantity = 0; // 記錄總數量
 
   productData.forEach(([product, quantity]) => {
     const trimmedProduct = product.trim(); // Trim spaces
-    const dataRow = worksheet.addRow([trimmedProduct, quantity]);
+    let category = ""; // 儲存分類名稱
+
+    // 判斷產品屬於哪個分類
+    if (highlightedProducts.includes(trimmedProduct)) {
+      category1++;
+      if (category1 === 1) {
+        category = "濾網➜";
+      }
+    } else if (highlightedProducts2.includes(trimmedProduct)) {
+      category2++;
+      if (category2 === 1) {
+        category = "設備➜";
+      }
+    } else if (highlightedProducts3.includes(trimmedProduct)) {
+      category3++;
+      if (category3 === 1) {
+        category = "配件➜";
+      }
+    }
+
+    // 記錄總數量
+    totalQuantity += quantity;
+
+    const dataRow = worksheet.addRow([category, trimmedProduct, quantity]);
     dataRow.height = 30;
-    // 設置邊框
-    /*const borderStyle = {
-      top: { style: 'thin', color: { argb: '000000' } },
-      left: { style: 'thin', color: { argb: '000000' } },
-      bottom: { style: 'thin', color: { argb: '000000' } },
-      right: { style: 'thin', color: { argb: '000000' } }
-    };
-    dataRow.getCell(1).border = borderStyle;
-    dataRow.getCell(2).border = borderStyle;*/
+
     // 設置居中
     dataRow.getCell(1).alignment = {
-        vertical: 'middle' // 垂直居中
+      horizontal: 'center',
+      vertical: 'middle', // 垂直居中
     };
     dataRow.getCell(2).alignment = {
-        horizontal: 'center', // 水平居中
-        vertical: 'middle' // 垂直居中
+      vertical: 'middle', // 垂直居中
+      indent: 1 // 增加一點距離
     };
-    // 檢查產品是否在 highlightedProducts 中
+    dataRow.getCell(3).alignment = {
+      horizontal: 'center', // 水平居中
+      vertical: 'middle' // 垂直居中
+    };
+
+    // 字體
+    dataRow.getCell(1).font = {
+      bold: true,       // 粗體
+      color: { argb: 'FF0000' } // 紅色
+    };
+    // 設置顏色和填充
     if (highlightedProducts.includes(trimmedProduct)) {
-        // 設置儲存格的填充顏色
-        dataRow.getCell(1).fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'DFFFDF' } // 設置淺綠色
-        };
-        dataRow.getCell(2).fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'DFFFDF' } // 設置淺綠色
-        };
-    }
-    // 檢查產品是否在 highlightedProducts2 中
-    if (highlightedProducts2.includes(trimmedProduct)) {
-        // 設置儲存格的填充顏色
-        dataRow.getCell(1).fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'D2E9FF' } // 設置淺藍色
-        };
-        dataRow.getCell(2).fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'D2E9FF' } // 設置淺藍色
-        };
-    }
-    // 檢查產品是否在 highlightedProducts3 中
-    if (highlightedProducts3.includes(trimmedProduct)) {
-        // 設置儲存格的填充顏色
-        dataRow.getCell(1).fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'F0F0F0' } // 設置淺灰色
-        };
-        dataRow.getCell(2).fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'F0F0F0' } // 設置淺灰色
-        };
+      dataRow.getCell(1).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'F0F0F0' } // 設置淺灰色
+      };
+      dataRow.getCell(2).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'DFFFDF' } // 設置淺綠色
+      };
+      dataRow.getCell(3).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'DFFFDF' } // 設置淺綠色
+      };
+    } else if (highlightedProducts2.includes(trimmedProduct)) {
+      dataRow.getCell(1).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'F0F0F0' } // 設置淺灰色
+      };
+      dataRow.getCell(2).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'D2E9FF' } // 設置淺藍色
+      };
+      dataRow.getCell(3).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'D2E9FF' } // 設置淺藍色
+      };
+    } else if (highlightedProducts3.includes(trimmedProduct)) {
+      dataRow.getCell(1).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'F0F0F0' } // 設置淺灰色
+      };
+      dataRow.getCell(2).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'D8D8EB' } // 設置淺紫色
+      };
+      dataRow.getCell(3).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'D8D8EB' } // 設置淺紫色
+      };
     }
   });
 
+  // footer
+  const totalRow = worksheet.addRow(["總數➜", "", Number(totalQuantity)]);
+  totalRow.height = 30; // 設定行高為 30
+  // 字體
+  totalRow.getCell(1).font = {
+    bold: true,       // 粗體
+    color: { argb: '000000' } 
+  };
+  totalRow.getCell(1).alignment = {
+    horizontal: 'center', // 水平居中
+    vertical: 'middle' // 垂直居中
+  };
+  totalRow.getCell(3).font = {
+    bold: true,       // 粗體
+  };
+  // 設置上邊框
+  totalRow.getCell(1).border = {
+    top: { style: 'thick', color: { argb: '000000' } }
+  }; 
+  totalRow.getCell(2).border = {
+    top: { style: 'thick', color: { argb: '000000' } }
+  }; 
+  totalRow.getCell(3).border = {
+    top: { style: 'thick', color: { argb: '000000' } }
+  }; 
+  //對齊
+  totalRow.getCell(3).alignment = {
+    horizontal: 'center', // 水平居中
+    vertical: 'middle' // 垂直居中
+  };
+  //顏色
+  totalRow.getCell(1).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'F0F0F0' } // 設置淺灰色
+  };
+  totalRow.getCell(2).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'F0F0F0' } // 設置淺灰色
+  };
+  totalRow.getCell(3).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'F0F0F0' } // 設置淺灰色
+  };
   const today = new Date();
   const dateString = today.toISOString().slice(0, 10).replace(/-/g, '');
 
@@ -388,6 +488,8 @@ const ProductToExcel = () => {
     link.download = `${dateString}_product_template.xlsx`;
     link.click();
   });
+
+  
 };
 
 
