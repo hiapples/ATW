@@ -182,39 +182,205 @@ const handleOrderMerge = () => {
   // 计算合并后的运单数量
    waybillCount.value = orderMap.size;
 
-  // 添加商品统计，并按名称排序
-  const productSummaryOutput = Array.from(productSummary.entries())
-    .sort((a, b) => a[0].localeCompare(b[0]))  // 按商品名称排序
+  // 获取商品统计并转换为数组
+  const productSummaryOutput = Array.from(productSummary.entries());
+
+  // 排序规则
+  const sortedProductSummary = productSummaryOutput.sort((a, b) => {
+    const indexA = highlightedProducts.indexOf(a[0]);
+    const indexB = highlightedProducts.indexOf(b[0]);
+
+    const indexA2 = highlightedProducts2.indexOf(a[0]);
+    const indexB2 = highlightedProducts2.indexOf(b[0]);
+
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB; // `highlightedProducts` 按原数组顺序
+    if (indexA !== -1) return -1; // `highlightedProducts` 优先
+
+    if (indexB !== -1) return 1; // `highlightedProducts` 在 `highlightedProducts2` 之前
+
+    if (indexA2 !== -1 && indexB2 !== -1) return indexA2 - indexB2; // `highlightedProducts2` 按原数组顺序
+    if (indexA2 !== -1) return -1; // `highlightedProducts2` 次优先
+
+    if (indexB2 !== -1) return 1; // `highlightedProducts2` 在其他商品之前
+
+    return a[0].localeCompare(b[0]); // 其他商品按名称排序
+  });
+
+
+  // 格式化输出
+  const formattedProductSummary = sortedProductSummary
     .map(([product, totalQuantity]) => `${product} : ${totalQuantity}`)
     .join('\n');
 
-  const finalOutput = `【Total Orders】\n${waybillCount.value} Unit\n\n【Total Product】\n${productSummaryOutput}`;
+  // 组合最终输出
+  const finalOutput = `【Total Orders】\n${waybillCount.value} Unit\n\n【Total Product】\n${formattedProductSummary}`;
 
   outputText.value = finalOutput;
   showNotificationWithDelay('Order Merged Successfully！', 'success');
 };
 
 
+const highlightedProducts = [ //14
+  "C200-Carbon前置濾網(盒)",
+  "C200-Combo主濾網(盒)",
+  "C200-Odors主濾網(盒)",
+  "C200-Bio前置濾網(盒)",
+  "C600-Carbon前置濾網(盒)",
+  "C600-Combo主濾網(盒)",
+  "C600-Odors主濾網(盒)",
+  "C600-Bio前置濾網(盒)",
+  "C360-Carbon前置濾網(盒)",
+  "C360-Bio前置濾網(盒)",
+  "C360-Odors主濾網(盒)",
+  "C260-Bio前置濾網(盒)",
+  "C260-Odors主濾網(盒)",
+  "M1濾網(一盒2片)"
+];
+const highlightedProducts2 = [ //15
+  "A1",
+  "M1",
+  "S1(白色)",
+  "C200",
+  "C600",
+  "C360",
+  "C260",
+  "S1 Pro",
+  "Smini主機",
+  "L10",
+  "L1",
+  "Snano主機-黑",
+  "Snano主機-紅",
+  "Snano主機-綠",
+  "Snano主機-藍"
+];
+const highlightedProducts3 = [ //21
+  "M1車袋",
+  "Smini Adaptor-US",
+  "Smini專用桌架",
+  "Smini皮革提帶",
+  "Smini專用壁掛架",
+  "Smini行動電池盒",
+  "LG18650充電電池(組)",
+  "E27節律球泡燈",
+  "節律照明控制器",
+  "LED驅動器(60W無風扇)(LPV-60-24)",
+  "IS-08 P2 燈具藍芽控制器",
+  "LED照明電源驅動器(40W 20V)",
+  "HCL控制器",
+  "掛板 (P2016 MOUNTING PLATE)",
+  "LED電源供應器15V/3.4A (LRS-50-15)",
+  "Snano磁吸支架",
+  "Snano擴香片補充包",
+  "Snano精油-健康呼吸",
+  "Snano精油-樂活無鬱",
+  "Snano精油-安神好眠",
+  "Snano精油-清新健腦"
+];
 
 const ProductToExcel = () => {
-  // 创建一个新的工作簿
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Product');
 
-  // 定义表头
-  const header = ["Total Orders","Total Product"];
+  const header = ["產品名稱", "數量"];
+  worksheet.columns = [
+    { width: 30 }, { width: 10 }
+  ];
 
-  // 添加表头
-  worksheet.addRow(header);
+  const headerRow = worksheet.addRow(header);
+  headerRow.eachCell((cell) => {
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    cell.font = { bold: true };
+  });
 
-  // 添加数据行
-  worksheet.addRow([waybillCount.value]);
+  const lines = outputText.value.split('\n');
+  let isProductSection = false;
+  let productData = [];
 
-  // 获取当前日期（格式：yyyyMMdd）
+  lines.forEach((line) => {
+    if (line.includes("【Total Product】")) {
+      isProductSection = true;
+      return;
+    }
+    if (isProductSection && line.trim() !== "") {
+      const parts = line.split(" : ");
+      if (parts.length === 2) {
+        const product = parts[0].trim();
+        const quantity = Number(parts[1].trim());
+        productData.push([product, quantity]);
+      }
+    }
+  });
+
+
+
+  productData.forEach(([product, quantity]) => {
+    const trimmedProduct = product.trim(); // Trim spaces
+    const dataRow = worksheet.addRow([trimmedProduct, quantity]);
+    dataRow.height = 30;
+    // 設置邊框
+    /*const borderStyle = {
+      top: { style: 'thin', color: { argb: '000000' } },
+      left: { style: 'thin', color: { argb: '000000' } },
+      bottom: { style: 'thin', color: { argb: '000000' } },
+      right: { style: 'thin', color: { argb: '000000' } }
+    };
+    dataRow.getCell(1).border = borderStyle;
+    dataRow.getCell(2).border = borderStyle;*/
+    // 設置居中
+    dataRow.getCell(1).alignment = {
+        vertical: 'middle' // 垂直居中
+    };
+    dataRow.getCell(2).alignment = {
+        horizontal: 'center', // 水平居中
+        vertical: 'middle' // 垂直居中
+    };
+    // 檢查產品是否在 highlightedProducts 中
+    if (highlightedProducts.includes(trimmedProduct)) {
+        // 設置儲存格的填充顏色
+        dataRow.getCell(1).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'DFFFDF' } // 設置淺綠色
+        };
+        dataRow.getCell(2).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'DFFFDF' } // 設置淺綠色
+        };
+    }
+    // 檢查產品是否在 highlightedProducts2 中
+    if (highlightedProducts2.includes(trimmedProduct)) {
+        // 設置儲存格的填充顏色
+        dataRow.getCell(1).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'D2E9FF' } // 設置淺藍色
+        };
+        dataRow.getCell(2).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'D2E9FF' } // 設置淺藍色
+        };
+    }
+    // 檢查產品是否在 highlightedProducts3 中
+    if (highlightedProducts3.includes(trimmedProduct)) {
+        // 設置儲存格的填充顏色
+        dataRow.getCell(1).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'F0F0F0' } // 設置淺灰色
+        };
+        dataRow.getCell(2).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'F0F0F0' } // 設置淺灰色
+        };
+    }
+  });
+
   const today = new Date();
   const dateString = today.toISOString().slice(0, 10).replace(/-/g, '');
 
-  // 导出 Excel 文件，文件名为当前日期_Orders_template.xlsx
   workbook.xlsx.writeBuffer().then((buffer) => {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const link = document.createElement('a');
@@ -223,6 +389,9 @@ const ProductToExcel = () => {
     link.click();
   });
 };
+
+
+
 
 const OrdersToExcel = () => {
   const lines = inputText.value.trim().split('\n');
