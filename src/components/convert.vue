@@ -703,7 +703,7 @@ const isModalVisible = ref(false);
 const handleModal = () => {
   // 如果 outputText 為空，則不打開 modal
   if (outputText.value === '') {
-    showNotificationWithDelay('The output box is empty, please merge the orders first.', 'error')
+    showNotificationWithDelay('Please merge the orders first.', 'error')
   } else {
     // 如果有值，則打開 modal
     isModalVisible.value = true;
