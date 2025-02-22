@@ -122,120 +122,7 @@ function normalizeAddress(address) {
     .trim();                         // 去掉首尾空格
 }
 
-// 合并订单逻辑
-const showModal = ref(false); // 控制 modal 的显示
-const modalRef = ref(null); // 引用 modal 元素
-const handleOrderMerge = async() => {
-  if (!inputText.value.trim()) {
-    outputText.value = ''; // 清空输出框
-    showModal.value = false;
-    showNotificationWithDelay('Please enter content...', 'error');
-    return;
-  }
-  const lines = inputText.value.trim().split('\n'); // 分割每一行
-
-  // 验证每行格式
-  const invalidLines = lines.map((line, index) => {
-    const validationError = validateLine(line); // 使用 validateLine 函数验证每行
-    outputText.value = '';
-    showModal.value = false;
-    return validationError ? `Line ${index + 1}: ${validationError}` : null;
-  }).filter(error => error !== null); // 过滤出有错误的行
-
-  if (invalidLines.length > 0) {
-    outputText.value = '';
-    showModal.value = false;
-    showNotificationWithDelay(invalidLines.join('\n'), 'error'); // 传递换行错误信息
-    return;
-  }
-
-  const orderMap = new Map(); // 存储订单数据
-  const productSummary = new Map(); // 统计所有商品总数量
-
-  lines.forEach((line) => {
-    const parts = line.trim().split(/\t/); // 以 Tab 分隔每行
-    const orderNumber = parts[0]; // 订单号
-    const name = parts[3]; // 姓名
-    const phone = parts[4]; // 电话
-    const address = normalizeAddress(parts[5]); // 地址
-    const product = parts[9]; // 商品名称
-    const quantity = parseInt(parts[10], 10); // 商品数量
-
-    const key = `${orderNumber}-${name}-${phone}-${address}`;
-
-    if (!orderMap.has(key)) {
-      orderMap.set(key, {
-        orderNumber,
-        name,
-        phone,
-        address,
-        products: new Map(),
-      });
-    }
-
-    const order = orderMap.get(key);
-
-    if (!order.products.has(product)) {
-      order.products.set(product, 0);
-    }
-
-    order.products.set(product, order.products.get(product) + quantity);
-
-    // 统计商品总数
-    if (!productSummary.has(product)) {
-      productSummary.set(product, 0);
-    }
-    productSummary.set(product, productSummary.get(product) + quantity);
-  });
-
-  // 计算合并后的运单数量
-   waybillCount.value = orderMap.size;
-
-  // 获取商品统计并转换为数组
-  const productSummaryOutput = Array.from(productSummary.entries());
-
-  // 排序规则
-  const sortedProductSummary = productSummaryOutput.sort((a, b) => {
-    const indexA = highlightedProducts.indexOf(a[0]);
-    const indexB = highlightedProducts.indexOf(b[0]);
-
-    const indexA2 = highlightedProducts2.indexOf(a[0]);
-    const indexB2 = highlightedProducts2.indexOf(b[0]);
-
-    if (indexA !== -1 && indexB !== -1) return indexA - indexB; // `highlightedProducts` 按原数组顺序
-    if (indexA !== -1) return -1; // `highlightedProducts` 优先
-
-    if (indexB !== -1) return 1; // `highlightedProducts` 在 `highlightedProducts2` 之前
-
-    if (indexA2 !== -1 && indexB2 !== -1) return indexA2 - indexB2; // `highlightedProducts2` 按原数组顺序
-    if (indexA2 !== -1) return -1; // `highlightedProducts2` 次优先
-
-    if (indexB2 !== -1) return 1; // `highlightedProducts2` 在其他商品之前
-
-    return a[0].localeCompare(b[0]); // 其他商品按名称排序
-  });
-
-
-  // 格式化输出
-  const formattedProductSummary = sortedProductSummary
-    .map(([product, totalQuantity]) => `${product} : ${totalQuantity}`)
-    .join('\n');
-
-  // 组合最终输出
-  const finalOutput = `【Total Orders】\n${waybillCount.value} Unit\n\n【Total Product】\n${formattedProductSummary}`;
-
-  outputText.value = finalOutput;
-  showNotificationWithDelay('Order Merged Successfully！', 'success');
-  // 弹出 modal
-  if (finalOutput !== '') {
-    showModal.value = true; // 打开 modal
-    await nextTick(); // 等待 DOM 更新
-    const modal = new bootstrap.Modal(modalRef.value); // 使用 Bootstrap 的 modal
-    modal.show(); // 显示 modal
-  }
-};
-
-
+//濾網
 const highlightedProducts = [ //14
   "C200-Carbon前置濾網(盒)",
   "C200-Combo主濾網(盒)",
@@ -252,6 +139,7 @@ const highlightedProducts = [ //14
   "C260-Odors主濾網(盒)",
   "M1濾網(一盒2片)"
 ];
+//設備
 const highlightedProducts2 = [ //15
   "A1",
   "M1",
@@ -269,6 +157,7 @@ const highlightedProducts2 = [ //15
   "Snano主機-綠",
   "Snano主機-藍"
 ];
+//配件
 const highlightedProducts3 = [ //21
   "M1車袋",
   "Smini Adaptor-US",
@@ -293,6 +182,7 @@ const highlightedProducts3 = [ //21
   "Snano精油-清新健腦"
 ];
 
+//商品統計
 const ProductToExcel = () => {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Product');
@@ -518,9 +408,7 @@ const ProductToExcel = () => {
   
 };
 
-
-
-
+//運單彙總
 const OrdersToExcel = () => {
   const lines = inputText.value.trim().split('\n');
   const orderMap = new Map();
@@ -711,8 +599,120 @@ const OrdersToExcel = () => {
   });
 };
 
+// MergeOrders按鈕
+const showModal = ref(false); // 控制 modal 的显示
+const modalRef = ref(null); // 引用 modal 元素
+const handleOrderMerge = async() => {
+  if (!inputText.value.trim()) {
+    outputText.value = ''; // 清空输出框
+    showModal.value = false;
+    showNotificationWithDelay('Please enter content...', 'error');
+    return;
+  }
+  const lines = inputText.value.trim().split('\n'); // 分割每一行
 
-// 清空内容
+  // 验证每行格式
+  const invalidLines = lines.map((line, index) => {
+    const validationError = validateLine(line); // 使用 validateLine 函数验证每行
+    outputText.value = '';
+    showModal.value = false;
+    return validationError ? `Line ${index + 1}: ${validationError}` : null;
+  }).filter(error => error !== null); // 过滤出有错误的行
+
+  if (invalidLines.length > 0) {
+    outputText.value = '';
+    showModal.value = false;
+    showNotificationWithDelay(invalidLines.join('\n'), 'error'); // 传递换行错误信息
+    return;
+  }
+
+  const orderMap = new Map(); // 存储订单数据
+  const productSummary = new Map(); // 统计所有商品总数量
+
+  lines.forEach((line) => {
+    const parts = line.trim().split(/\t/); // 以 Tab 分隔每行
+    const orderNumber = parts[0]; // 订单号
+    const name = parts[3]; // 姓名
+    const phone = parts[4]; // 电话
+    const address = normalizeAddress(parts[5]); // 地址
+    const product = parts[9]; // 商品名称
+    const quantity = parseInt(parts[10], 10); // 商品数量
+
+    const key = `${orderNumber}-${name}-${phone}-${address}`;
+
+    if (!orderMap.has(key)) {
+      orderMap.set(key, {
+        orderNumber,
+        name,
+        phone,
+        address,
+        products: new Map(),
+      });
+    }
+
+    const order = orderMap.get(key);
+
+    if (!order.products.has(product)) {
+      order.products.set(product, 0);
+    }
+
+    order.products.set(product, order.products.get(product) + quantity);
+
+    // 统计商品总数
+    if (!productSummary.has(product)) {
+      productSummary.set(product, 0);
+    }
+    productSummary.set(product, productSummary.get(product) + quantity);
+  });
+
+  // 计算合并后的运单数量
+  waybillCount.value = orderMap.size;
+
+  // 获取商品统计并转换为数组
+  const productSummaryOutput = Array.from(productSummary.entries());
+
+  // 排序规则
+  const sortedProductSummary = productSummaryOutput.sort((a, b) => {
+    const indexA = highlightedProducts.indexOf(a[0]);
+    const indexB = highlightedProducts.indexOf(b[0]);
+
+    const indexA2 = highlightedProducts2.indexOf(a[0]);
+    const indexB2 = highlightedProducts2.indexOf(b[0]);
+
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB; // `highlightedProducts` 按原数组顺序
+    if (indexA !== -1) return -1; // `highlightedProducts` 优先
+
+    if (indexB !== -1) return 1; // `highlightedProducts` 在 `highlightedProducts2` 之前
+
+    if (indexA2 !== -1 && indexB2 !== -1) return indexA2 - indexB2; // `highlightedProducts2` 按原数组顺序
+    if (indexA2 !== -1) return -1; // `highlightedProducts2` 次优先
+
+    if (indexB2 !== -1) return 1; // `highlightedProducts2` 在其他商品之前
+
+    return a[0].localeCompare(b[0]); // 其他商品按名称排序
+  });
+
+
+  // 格式化输出
+  const formattedProductSummary = sortedProductSummary
+    .map(([product, totalQuantity]) => `${product} : ${totalQuantity}`)
+    .join('\n');
+
+  // 组合最终输出
+  const finalOutput = `【Total Orders】\n${waybillCount.value} Unit\n\n【Total Product】\n${formattedProductSummary}`;
+
+  outputText.value = finalOutput;
+  showNotificationWithDelay('Order Merged Successfully！', 'success');
+  // 弹出 modal
+  if (finalOutput !== '') {
+    showModal.value = true; // 打开 modal
+    await nextTick(); // 等待 DOM 更新
+    const modal = new bootstrap.Modal(modalRef.value); // 使用 Bootstrap 的 modal
+    modal.show(); // 显示 modal
+  }
+};
+
+// Clear按鈕
 const handleClear = () => {
   inputText.value = '';
   outputText.value = '';
