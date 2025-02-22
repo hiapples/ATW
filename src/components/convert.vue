@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, nextTick } from 'vue';
 import ExcelJS from 'exceljs';
 
 const inputText = ref(''); // 输入框内容
@@ -31,6 +31,7 @@ const validateLine = (line) => {
 
   if (parts.length < 11) {
     outputText.value = '';
+    showModal.value = false;
     return 'Error: Too few columns (less than 11)';
   }
 
@@ -39,6 +40,7 @@ const validateLine = (line) => {
 
   if (!orderNumberRegex.test(orderNumber)) {
     outputText.value = '';
+    showModal.value = false;
     return 'Error: Order number must contain only letters or digits';
   }
 
@@ -47,6 +49,7 @@ const validateLine = (line) => {
 
   if (!phoneRegex.test(phone)) {
     outputText.value = '';
+    showModal.value = false;
     return 'Error: Phone number must contain only digits';
   }
 
@@ -55,11 +58,13 @@ const validateLine = (line) => {
 
   if (!quantityRegex.test(quantity)) {
     outputText.value = '';
+    showModal.value = false;
     return 'Error: Quantity must be a number';
   }
 
   if (parts.length > 11) {
     outputText.value = '';
+    showModal.value = false;
     return 'Error: Too many columns (greater than 11)';
   }
 
@@ -121,21 +126,23 @@ function normalizeAddress(address) {
 const handleOrderMerge = () => {
   if (!inputText.value.trim()) {
     outputText.value = ''; // 清空输出框
+    showModal.value = false;
     showNotificationWithDelay('Please enter content...', 'error');
     return;
   }
-  isModalVisible.value = true;
   const lines = inputText.value.trim().split('\n'); // 分割每一行
 
   // 验证每行格式
   const invalidLines = lines.map((line, index) => {
     const validationError = validateLine(line); // 使用 validateLine 函数验证每行
     outputText.value = '';
+    showModal.value = false;
     return validationError ? `Line ${index + 1}: ${validationError}` : null;
   }).filter(error => error !== null); // 过滤出有错误的行
 
   if (invalidLines.length > 0) {
     outputText.value = '';
+    showModal.value = false;
     showNotificationWithDelay(invalidLines.join('\n'), 'error'); // 传递换行错误信息
     return;
   }
@@ -698,15 +705,16 @@ const OrdersToExcel = () => {
 
 
 // 控制modal彈出
-const isModalVisible = ref(false);
-// 打開 modal
-const handleModal = () => {
-  // 如果 outputText 為空，則不打開 modal
+const showModal = ref(false); // 控制 modal 的显示
+const modalRef = ref(null); // 引用 modal 元素
+const handleModal = async() => {
   if (outputText.value === '') {
-    showNotificationWithDelay('Please merge the orders first.', 'error')
+    showNotificationWithDelay('Please merge the orders first.', 'error');
   } else {
-    // 如果有值，則打開 modal
-    isModalVisible.value = true;
+    showModal.value = true; // 打开 modal
+    await nextTick(); // 等待 DOM 更新
+    const modal = new bootstrap.Modal(modalRef.value); // 使用 Bootstrap 的 modal
+    modal.show(); // 显示 modal
   }
 };
 
@@ -714,7 +722,7 @@ const handleModal = () => {
 const handleClear = () => {
   inputText.value = '';
   outputText.value = '';
-  isModalVisible.value = false;
+  showModal.value = false;
 };
 
 
@@ -747,26 +755,26 @@ const handleClear = () => {
     <div class="row">
       <div class="col-12 d-flex justify-content-center mt-5">
         <button class="convert" @click="handleOrderMerge">Merge Orders</button>
-        <button class="export ms-3" @click="handleModal" data-bs-toggle="modal" data-bs-target="#exampleModal">Export to Excel</button> <!-- 导出按钮 -->
+        <button class="export ms-3" @click="handleModal">Export to Excel</button> <!-- 导出按钮 -->
         <button class="cls ms-3" @click="handleClear">Clear</button>
       </div>
     </div>
   </div>
 
   <!-- Modal -->
-  <div v-if="isModalVisible" class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-      <div class="modal-dialog d-flex align-items-center">
-        <div class="modal-content">
-          <div class="modal-header d-flex justify-content-center">
-            <h5 class="modal-title " id="exampleModalLabel">Export to Excel</h5>
-          </div>
-          <div class="modal-body d-flex justify-content-between">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="ProductToExcel">Product Statistics</button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="OrdersToExcel">Orders</button>
-          </div>
+  <div  v-if="showModal" class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true" ref="modalRef">
+    <div class="modal-dialog d-flex align-items-center">
+      <div class="modal-content">
+        <div class="modal-header d-flex justify-content-center">
+          <h5 class="modal-title " id="exampleModalLabel">Export to Excel</h5>
+        </div>
+        <div class="modal-body d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="ProductToExcel">Product Statistics</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="OrdersToExcel">Orders</button>
         </div>
       </div>
     </div>
+  </div>
 </template>
 
 <style scoped>
@@ -868,5 +876,8 @@ textarea:focus {
 }
 .modal-body{
   padding: 30px;
+}
+.clickable-button:disabled {
+  pointer-events: auto; /* 允许点击事件 */
 }
 </style>
