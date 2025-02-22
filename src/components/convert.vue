@@ -123,7 +123,9 @@ function normalizeAddress(address) {
 }
 
 // 合并订单逻辑
-const handleOrderMerge = () => {
+const showModal = ref(false); // 控制 modal 的显示
+const modalRef = ref(null); // 引用 modal 元素
+const handleOrderMerge = async() => {
   if (!inputText.value.trim()) {
     outputText.value = ''; // 清空输出框
     showModal.value = false;
@@ -224,6 +226,13 @@ const handleOrderMerge = () => {
 
   outputText.value = finalOutput;
   showNotificationWithDelay('Order Merged Successfully！', 'success');
+  // 弹出 modal
+  if (finalOutput !== '') {
+    showModal.value = true; // 打开 modal
+    await nextTick(); // 等待 DOM 更新
+    const modal = new bootstrap.Modal(modalRef.value); // 使用 Bootstrap 的 modal
+    modal.show(); // 显示 modal
+  }
 };
 
 
@@ -703,21 +712,6 @@ const OrdersToExcel = () => {
 };
 
 
-
-// 控制modal彈出
-const showModal = ref(false); // 控制 modal 的显示
-const modalRef = ref(null); // 引用 modal 元素
-const handleModal = async() => {
-  if (outputText.value === '') {
-    showNotificationWithDelay('Please merge the orders first.', 'error');
-  } else {
-    showModal.value = true; // 打开 modal
-    await nextTick(); // 等待 DOM 更新
-    const modal = new bootstrap.Modal(modalRef.value); // 使用 Bootstrap 的 modal
-    modal.show(); // 显示 modal
-  }
-};
-
 // 清空内容
 const handleClear = () => {
   inputText.value = '';
@@ -755,7 +749,6 @@ const handleClear = () => {
     <div class="row">
       <div class="col-12 d-flex justify-content-center mt-5">
         <button class="convert" @click="handleOrderMerge">Merge Orders</button>
-        <button class="export ms-3" @click="handleModal">Export to Excel</button> <!-- 导出按钮 -->
         <button class="cls ms-3" @click="handleClear">Clear</button>
       </div>
     </div>
@@ -808,8 +801,7 @@ textarea:focus {
   }
 }
 .convert,
-.cls,
-.export {
+.cls {
   border-radius: 50px;
   padding: 10px 20px;
   color: white;
@@ -831,12 +823,6 @@ textarea:focus {
 }
 .cls:hover {
   background-color: #ae0000;
-}
-.export {
-  background-color: #007bff;
-}
-.export:hover {
-  background-color: #0056b3;
 }
 .notification {
   position: fixed;
