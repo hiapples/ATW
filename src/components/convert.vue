@@ -34,25 +34,49 @@ const validateLine = (line) => {
     showModal.value = false;
     return 'Error: Too few columns (less than 11)';
   }
-
+  //客貨訂單號
   const orderNumber = parts[0]; // 銷貨單號
   const orderNumberRegex = /^[a-zA-Z0-9#]*$/; // 正则表达式，要求只包含英文和数字
 
   if (!orderNumberRegex.test(orderNumber)) {
     outputText.value = '';
     showModal.value = false;
-    return 'Error: Order number must contain only letters or digits';
+    return 'Error: Order number must contain only letters, digits, or #';
   }
-
-  const phone = parts[4]; // "电话号码"在第 5 列（索引为 4）
-  const phoneRegex = /^\d+$/; // 正则表达式，要求只包含数字
+  //電話
+  let phone = parts[4].trim().replace(/\s+/g, ''); // 去除前后空格并删除所有空格
+  const phoneRegex = /^[\d#]+$/; // 只允许数字和 #
 
   if (!phoneRegex.test(phone)) {
     outputText.value = '';
     showModal.value = false;
-    return 'Error: Phone number must contain only digits';
+    return 'Error: Phone number must contain only digits or #';
+  }
+  // 地址
+  const address = normalizeAddress(parts[5]); // 假设地址在索引 5
+  const validCities = [
+    '新竹市', '台南市', '台北市', '高雄市', '桃園市', 
+    '台中市', '彰化縣', '嘉義市', '屏東縣', '雲林縣',
+    '基隆市', '宜蘭縣', '新北市', '南投縣', '嘉義縣',
+    '花蓮縣', '台東縣', '連江縣', '金門縣', '澎湖縣'
+  ];
+  // 将有效城市转换为正则表达式
+  const cityPattern = validCities.join('|'); // 将城市名用 | 连接成正则表达式
+  const regex = new RegExp(`(${cityPattern})`, 'g'); // 创建全局正则表达式
+
+  // 找到地址中的所有县市
+  const foundCities = address.match(regex);
+
+  // 检查是否有多个城市
+  if (foundCities && foundCities.length > 1) {
+    outputText.value = '';
+    showModal.value = false;
+    return 'Error: Address must contain exactly one city/county';
   }
 
+
+  
+  //商品數量
   const quantity = parts[10]; // "數量" 在第 11 列（索引 10）
   const quantityRegex = /^[1-9]\d*$/; // 正则表达式，要求只包含数字
 
@@ -128,34 +152,34 @@ const highlightedProducts = [ //14
   "C200-Combo主濾網(盒)",
   "C200-Odors主濾網(盒)",
   "C200-Bio前置濾網(盒)",
+  "C260-Bio前置濾網(盒)",
+  "C260-Odors主濾網(盒)",
+  "C360-Carbon前置濾網(盒)",
+  "C360-Bio前置濾網(盒)",
+  "C360-Odors主濾網(盒)",
   "C600-Carbon前置濾網(盒)",
   "C600-Combo主濾網(盒)",
   "C600-Odors主濾網(盒)",
   "C600-Bio前置濾網(盒)",
-  "C360-Carbon前置濾網(盒)",
-  "C360-Bio前置濾網(盒)",
-  "C360-Odors主濾網(盒)",
-  "C260-Bio前置濾網(盒)",
-  "C260-Odors主濾網(盒)",
   "M1濾網(一盒2片)"
 ];
 //設備
 const highlightedProducts2 = [ //15
-  "A1",
-  "M1",
+  "L1",
   "S1(白色)",
   "C200",
-  "C600",
-  "C360",
   "C260",
-  "S1 Pro",
+  "C360",
+  "C600",
   "Smini主機",
-  "L10",
-  "L1",
   "Snano主機-黑",
   "Snano主機-紅",
   "Snano主機-綠",
-  "Snano主機-藍"
+  "Snano主機-藍",
+  "S1 Pro",
+  "L10",
+  "A1",
+  "M1"
 ];
 //配件
 const highlightedProducts3 = [ //21
@@ -182,7 +206,7 @@ const highlightedProducts3 = [ //21
   "Snano精油-清新健腦"
 ];
 
-//商品統計
+//商品統計按鈕
 const ProductToExcel = () => {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Product');
@@ -244,9 +268,10 @@ const ProductToExcel = () => {
     }
   });
 
-  let category1 = 0; // 紀錄次數
-  let category2 = 0;
-  let category3 = 0;
+  let category1 = 0; // 濾網
+  let category2 = 0; //設備
+  let category3 = 0; //配件
+  let category4 = 0; //其他
   let totalQuantity = 0; // 記錄總數量
 
   productData.forEach(([product, quantity]) => {
@@ -268,6 +293,11 @@ const ProductToExcel = () => {
       category3++;
       if (category3 === 1) {
         category = "配件➜";
+      }
+    } else{
+      category4++;
+      if (category4 === 1) {
+        category = "其他➜";
       }
     }
 
@@ -345,6 +375,22 @@ const ProductToExcel = () => {
         pattern: 'solid',
         fgColor: { argb: 'D8D8EB' } // 設置淺紫色
       };
+    } else{
+      dataRow.getCell(1).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'F0F0F0' } // 設置淺灰色
+      };
+      dataRow.getCell(2).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE4CA' } // 設置淺橘色
+      };
+      dataRow.getCell(3).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE4CA' } // 設置淺橘色
+      };
     }
   });
 
@@ -408,7 +454,7 @@ const ProductToExcel = () => {
   
 };
 
-//運單彙總
+//運單彙總按鈕
 const OrdersToExcel = () => {
   const lines = inputText.value.trim().split('\n');
   const orderMap = new Map();
@@ -417,7 +463,8 @@ const OrdersToExcel = () => {
   lines.forEach((line) => {
     const parts = line.trim().split(/\t/);
     const address = normalizeAddress(parts[5]); // 假设 `address` 在 `parts` 数组中的第 6 个位置（索引为 5）
-    const [orderNumber, , , name, phone, , , , , product, quantity] = parts;
+    const [orderNumber, , , name, rawPhone, , , , , product, quantity] = parts;
+    const phone = rawPhone.replace(/\s+/g, ''); // 移除所有空格
 
     const key = `${orderNumber}-${name}-${phone}-${address}`;
 
@@ -679,18 +726,24 @@ const handleOrderMerge = async() => {
     const indexA2 = highlightedProducts2.indexOf(a[0]);
     const indexB2 = highlightedProducts2.indexOf(b[0]);
 
+    const indexA3 = highlightedProducts3.indexOf(a[0]);
+    const indexB3 = highlightedProducts3.indexOf(b[0]);
+
     if (indexA !== -1 && indexB !== -1) return indexA - indexB; // `highlightedProducts` 按原数组顺序
     if (indexA !== -1) return -1; // `highlightedProducts` 优先
-
-    if (indexB !== -1) return 1; // `highlightedProducts` 在 `highlightedProducts2` 之前
+    if (indexB !== -1) return 1;
 
     if (indexA2 !== -1 && indexB2 !== -1) return indexA2 - indexB2; // `highlightedProducts2` 按原数组顺序
     if (indexA2 !== -1) return -1; // `highlightedProducts2` 次优先
+    if (indexB2 !== -1) return 1;
 
-    if (indexB2 !== -1) return 1; // `highlightedProducts2` 在其他商品之前
+    if (indexA3 !== -1 && indexB3 !== -1) return indexA3 - indexB3; // `highlightedProducts3` 按原数组顺序
+    if (indexA3 !== -1) return -1; // `highlightedProducts3` 次次优先
+    if (indexB3 !== -1) return 1;
 
     return a[0].localeCompare(b[0]); // 其他商品按名称排序
   });
+
 
 
   // 格式化输出
