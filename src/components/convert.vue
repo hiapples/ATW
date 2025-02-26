@@ -2,30 +2,30 @@
 import { ref, nextTick } from 'vue';
 import ExcelJS from 'exceljs';
 
-const inputText = ref(''); // 输入框内容
-const outputText = ref(''); // 输出结果
+const inputText = ref(''); // 輸入框内容
+const outputText = ref(''); // 輸出结果
 const waybillCount = ref(''); //運單數量
 const notificationMessage = ref(''); // 通知消息
-const notificationType = ref(''); // 通知类型
-const showNotification = ref(false); // 控制通知显示
-let notificationTimeout; // 计时器参考
+const notificationType = ref(''); // 通知類型
+const showNotification = ref(false); // 控制通知顯示
+let notificationTimeout; // 計時器参考
 
-// 显示通知
+// 顯示通知
 const showNotificationWithDelay = (message, type) => {
   if (notificationTimeout) clearTimeout(notificationTimeout);
   showNotification.value = false;
 
   setTimeout(() => {
-    notificationMessage.value = message.replace(/\n/g, '<br>'); // 替换换行符为 <br> 标签
+    notificationMessage.value = message.replace(/\n/g, '<br>'); // 替換換行符為 <br> 標籤
     notificationType.value = type;
     showNotification.value = true;
     notificationTimeout = setTimeout(() => {
       showNotification.value = false;
-    }, 5000); // 显示通知 5 秒后关闭
+    }, 5000); // 顯示通知 5 秒後關閉
   }, 300);
 };
 
-// 固定列数检查
+// 固定列數檢查
 const validateLine = (line) => {
   const parts = line.split(/\t+/); // 按 Tab 分隔
 
@@ -36,7 +36,7 @@ const validateLine = (line) => {
   }
   //客貨訂單號
   const orderNumber = parts[0]; // 銷貨單號
-  const orderNumberRegex = /^[a-zA-Z0-9#]*$/; // 正则表达式，要求只包含英文和数字
+  const orderNumberRegex = /^[a-zA-Z0-9#]*$/; // 正規表達式，要求只包含英文和数字和#
 
   if (!orderNumberRegex.test(orderNumber)) {
     outputText.value = '';
@@ -44,8 +44,8 @@ const validateLine = (line) => {
     return 'Error: Order number must contain only letters, digits, or #';
   }
   //電話
-  let phone = parts[4].trim().replace(/\s+/g, ''); // 去除前后空格并删除所有空格
-  const phoneRegex = /^[\d#]+$/; // 只允许数字和 #
+  let phone = parts[4].trim().replace(/\s+/g, ''); // 去除前後空格並刪除所有空格
+  const phoneRegex = /^[\d#]+$/; // 只允許數字和 #
 
   if (!phoneRegex.test(phone)) {
     outputText.value = '';
@@ -53,21 +53,21 @@ const validateLine = (line) => {
     return 'Error: Phone number must contain only digits or #';
   }
   // 地址
-  const address = normalizeAddress(parts[5]); // 假设地址在索引 5
+  const address = normalizeAddress(parts[5]); 
   const validCities = [
     '新竹市', '台南市', '台北市', '高雄市', '桃園市', 
     '台中市', '彰化縣', '嘉義市', '屏東縣', '雲林縣',
     '基隆市', '宜蘭縣', '新北市', '南投縣', '嘉義縣',
     '花蓮縣', '台東縣', '連江縣', '金門縣', '澎湖縣'
   ];
-  // 将有效城市转换为正则表达式
-  const cityPattern = validCities.join('|'); // 将城市名用 | 连接成正则表达式
-  const regex = new RegExp(`(${cityPattern})`, 'g'); // 创建全局正则表达式
+  // 將有效城市轉換為正規表達式
+  const cityPattern = validCities.join('|'); // 將城市名用 | 連接成正規表達式
+  const regex = new RegExp(`(${cityPattern})`, 'g'); // 創建全局正規表達式
 
-  // 找到地址中的所有县市
+  // 找到地址中的所有縣市
   const foundCities = address.match(regex);
 
-  // 检查是否有多个城市
+  // 檢查是否有多個城市
   if (foundCities && foundCities.length > 1) {
     outputText.value = '';
     showModal.value = false;
@@ -77,8 +77,8 @@ const validateLine = (line) => {
 
   
   //商品數量
-  const quantity = parts[10]; // "數量" 在第 11 列（索引 10）
-  const quantityRegex = /^[1-9]\d*$/; // 正则表达式，要求只包含数字
+  const quantity = parts[10]; 
+  const quantityRegex = /^[1-9]\d*$/; // 正規表達式，要求只包含数字
 
   if (!quantityRegex.test(quantity)) {
     outputText.value = '';
@@ -93,56 +93,56 @@ const validateLine = (line) => {
   }
 
 
-  return null; // 如果没有错误
+  return null; // 如果没有錯誤
 };
 
 //輸入處理
 const handleInput = () => {
   // 使用正則表達式將兩個 Tab 中間加上空格
   inputText.value = inputText.value.replace(/\t\t/g, '\t \t');
-  // 按换行符拆分输入内容为行
+  // 按換行符拆分輸入内容為行
   let lines = inputText.value.split('\n');
 
-  // 初始化结果数组
+  // 初始化结果數组
   let result = [];
   let tempLine = '';
 
   lines.forEach((line) => {
-    // 去掉前后空格
+    // 去掉前後空格
     line = line.trim();
 
-    // 检查行是否以数字结尾（即是完整记录）
+    // 檢查行是否以數字結尾（即是完整紀錄）
     if (/.*\d$/.test(line)) {
-      // 如果当前有临时行，合并到结果中
+      // 如果當前有臨時行，合併到結果中
       if (tempLine) {
-        tempLine += ' ' + line; // 合并记录
+        tempLine += ' ' + line; // 合併紀錄
         result.push(tempLine.trim());
-        tempLine = ''; // 清空临时行
+        tempLine = ''; // 清空臨時行
       } else {
-        // 如果没有临时行，直接加入结果
+        // 如果没有臨時行，直接加入結果
         result.push(line);
       }
     } else {
-      // 行内数据需要合并到临时行
+      // 行内數據需要合併到臨時行
       tempLine += ' ' + line;
     }
   });
 
-  // 如果最后有剩余的临时行，加入结果
+  // 如果最後有剩餘的臨時行，加入结果
   if (tempLine) {
     result.push(tempLine.trim());
   }
 
-  // 将结果数组合并为字符串，保留记录间的换行符
+  // 將結果數组合併為字符串，保留紀錄間的換行符
   inputText.value = result.join('\n');
 };
 
 //地址標準化
 function normalizeAddress(address) {
   return address
-    .replace(/^台灣\s*\d{3}\s*/, '') // 移除前缀 "台灣" 和邮递区号
+    .replace(/^台灣\s*\d{3}\s*/, '') // 移除前綴 "台灣" 和郵遞區號
     .replace(/\s+/g, '')             // 移除所有空格
-    .replace(/,/g, '')               // 移除所有逗号
+    .replace(/,/g, '')               // 移除所有逗號
     .trim();                         // 去掉首尾空格
 }
 
@@ -459,10 +459,10 @@ const OrdersToExcel = () => {
   const lines = inputText.value.trim().split('\n');
   const orderMap = new Map();
 
-  // 遍历每一行数据并构建订单
+  // 遍歷每一行數據並構建訂單
   lines.forEach((line) => {
     const parts = line.trim().split(/\t/);
-    const address = normalizeAddress(parts[5]); // 假设 `address` 在 `parts` 数组中的第 6 个位置（索引为 5）
+    const address = normalizeAddress(parts[5]); 
     const [orderNumber, , , name, rawPhone, , , , , product, quantity] = parts;
     const phone = rawPhone.replace(/\s+/g, ''); // 移除所有空格
 
@@ -482,12 +482,12 @@ const OrdersToExcel = () => {
     order.products.set(product, order.products.get(product) + currentQuantity);
   });
 
-  // 定义表头
+  // 定義表頭
   const header = [
     "*客戶訂單號", "*收件方姓名", "收件方電話", "*收件方詳細地址", "*商品名稱", "*商品數量", "包裹備註", "代收貨款", "月結帳號", "附加服務內容"
   ];
 
-  // 构建数据行
+  // 構建數據行
   const data = Array.from(orderMap.values()).map(({ orderNumber, name, phone, address, products }) => {
     const productDetails = Array.from(products.entries())
       .map(([product, totalQuantity]) => `${product}*${totalQuantity}`) // 保留商品名稱與原始數量
@@ -499,76 +499,76 @@ const OrdersToExcel = () => {
       address,      // 收件方詳細地址
       productDetails, // 商品名稱 (包含原始數量)
       1,            // 商品數量固定為 1
-      '', '', '', '' // 其他列为空
+      '', '', '', '' // 其他列為空
     ];
   });
 
-  // 创建一个新的工作簿
+  // 創建一個新的工作簿
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Orders');
 
-  // 设置列宽
+  // 設置列寬
   worksheet.columns = [
     { width: 22 }, { width: 15 }, { width: 15 }, { width: 50 }, { width: 40 }, { width: 13 },
     { width: 20 }, { width: 20 }, { width: 20 }, { width: 20 }
   ];
 
-  // 添加表头
+  // 添加表頭
   worksheet.addRow(header).eachCell((cell, colNumber) => {
-    // 设置统一的字体：微软雅黑
+    // 設置統一的字體：微軟雅黑
     cell.font = { name: 'Microsoft YaHei', bold: true, size: 10 };
 
-    // 第一栏
+    // 第一欄
     if (colNumber === 1) {
-      cell.font.color = { argb: "FF0000" }; // 红字
+      cell.font.color = { argb: "FF0000" }; // 紅字
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "FFF1E1" } }; // 淡米色背景
     }
-    // 第二栏
+    // 第二欄
     else if (colNumber === 2) {
-      cell.font.color = { argb: "FF0000" }; // 红字
+      cell.font.color = { argb: "FF0000" }; // 紅字
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "FAD0D0" } }; // 淡红色背景
     }
-    // 第三栏
+    // 第三欄
     else if (colNumber === 3) {
       cell.font.color = { argb: "000000" }; // 黑字
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "FAD0D0" } }; // 淡红色背景
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "FAD0D0" } }; // 淡紅色背景
     }
-    // 第四栏
+    // 第四欄
     else if (colNumber === 4) {
-      cell.font.color = { argb: "FF0000" }; // 红字
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "FAD0D0" } }; // 淡红色背景
+      cell.font.color = { argb: "FF0000" }; // 紅字
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "FAD0D0" } }; // 淡紅色背景
     }
-    // 第五栏
+    // 第五欄
     else if (colNumber === 5) {
-      cell.font.color = { argb: "FF0000" }; // 红字
+      cell.font.color = { argb: "FF0000" }; // 紅字
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "FFF1E1" } }; // 淡米色背景
     }
-    // 第六栏
+    // 第六欄
     else if (colNumber === 6) {
-      cell.font.color = { argb: "FF0000" }; // 红字
+      cell.font.color = { argb: "FF0000" }; // 紅字
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "FFF1E1" } }; // 淡米色背景
     }
-    // 第七栏
+    // 第七欄
     else if (colNumber === 7) {
-      cell.font.color = { argb: "FF0000" }; // 红字
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "D9E4F4" } }; // 淡蓝色背景
+      cell.font.color = { argb: "FF0000" }; // 紅字
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "D9E4F4" } }; // 淡藍色背景
     }
-    // 第八、九、十栏
+    // 第八、九、十欄
     else if (colNumber >= 8 && colNumber <= 10) {
       cell.font.color = { argb: "000000" }; // 黑字
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "D9EAD3" } }; // 淡绿色背景
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "D9EAD3" } }; // 淡綠色背景
     }
 
-    // 其他统一设置
+    // 其他統一設置
     cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
     cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
   });
 
-  // 设置表头行的高度为 30
+  // 設置表頭行的高度為 30
   worksheet.getRow(1).height = 30;
 
 
-  // 隐藏第 2 和第 3 列
+  // 隱藏第 2 和第 3 列
   const row = worksheet.addRow([
     "必填，支持輸入字母和數字，max=64", 
     "必填，max=100", 
@@ -582,7 +582,7 @@ const OrdersToExcel = () => {
     "max = 30"
   ]);
   row.eachCell((cell) => {
-    cell.alignment = { vertical: 'middle', wrapText: true }; // Align vertically and wrap text
+    cell.alignment = { vertical: 'middle', wrapText: true }; 
   });
     
   const row2 = worksheet.addRow([
@@ -598,10 +598,8 @@ const OrdersToExcel = () => {
   ]);
   row2.eachCell((cell, colNumber) => {
     if (colNumber <= 3) {
-      // Horizontally center the first three columns
       cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
     } else {
-      // For the remaining columns, keep the previous vertical alignment and wrapping
       cell.alignment = { vertical: 'middle', wrapText: true };
     }
   });
@@ -609,12 +607,12 @@ const OrdersToExcel = () => {
   worksheet.getRow(2).hidden = true;
   worksheet.getRow(3).hidden = true;
 
-  // 添加数据行
+  // 添加數據行
   data.forEach((row) => {
     const newRow = worksheet.addRow(row);
 
-    // 设置每行的高度
-    newRow.height = 50; // 可以根据需要调整行高
+    // 設置每行的高度
+    newRow.height = 50; // 可以根據需要調整行高
 
     newRow.eachCell((cell, colNumber) => {
       cell.font = { size: 10 };
@@ -632,11 +630,11 @@ const OrdersToExcel = () => {
 
 
 
-  // 获取当前日期（格式：yyyyMMdd）
+  // 獲取當前日期（格式：yyyyMMdd）
   const today = new Date();
   const dateString = today.toISOString().slice(0, 10).replace(/-/g, '');
 
-  // 导出 Excel 文件，文件名为当前日期_Orders_template.xlsx
+  // 導出 Excel 文件，文件名為當前日期_Orders_template.xlsx
   workbook.xlsx.writeBuffer().then((buffer) => {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const link = document.createElement('a');
@@ -651,7 +649,7 @@ const showModal = ref(false); // 控制 modal 的显示
 const modalRef = ref(null); // 引用 modal 元素
 const handleOrderMerge = async() => {
   if (!inputText.value.trim()) {
-    outputText.value = ''; // 清空输出框
+    outputText.value = ''; // 清空輸出框
     showModal.value = false;
     showNotificationWithDelay('Please enter content...', 'error');
     return;
@@ -660,30 +658,30 @@ const handleOrderMerge = async() => {
 
   // 验证每行格式
   const invalidLines = lines.map((line, index) => {
-    const validationError = validateLine(line); // 使用 validateLine 函数验证每行
+    const validationError = validateLine(line); // 使用 validateLine 函數驗證每行
     outputText.value = '';
     showModal.value = false;
     return validationError ? `Line ${index + 1}: ${validationError}` : null;
-  }).filter(error => error !== null); // 过滤出有错误的行
+  }).filter(error => error !== null); // 過濾出有錯誤的行
 
   if (invalidLines.length > 0) {
     outputText.value = '';
     showModal.value = false;
-    showNotificationWithDelay(invalidLines.join('\n'), 'error'); // 传递换行错误信息
+    showNotificationWithDelay(invalidLines.join('\n'), 'error'); // 傳遞換行錯誤訊息
     return;
   }
 
-  const orderMap = new Map(); // 存储订单数据
-  const productSummary = new Map(); // 统计所有商品总数量
+  const orderMap = new Map(); // 儲存訂單數據
+  const productSummary = new Map(); // 統計所有商品總數量
 
   lines.forEach((line) => {
     const parts = line.trim().split(/\t/); // 以 Tab 分隔每行
-    const orderNumber = parts[0]; // 订单号
+    const orderNumber = parts[0]; // 訂單號
     const name = parts[3]; // 姓名
-    const phone = parts[4]; // 电话
+    const phone = parts[4]; // 電話
     const address = normalizeAddress(parts[5]); // 地址
-    const product = parts[9]; // 商品名称
-    const quantity = parseInt(parts[10], 10); // 商品数量
+    const product = parts[9]; // 商品名稱
+    const quantity = parseInt(parts[10], 10); // 商品數量
 
     const key = `${orderNumber}-${name}-${phone}-${address}`;
 
@@ -705,20 +703,20 @@ const handleOrderMerge = async() => {
 
     order.products.set(product, order.products.get(product) + quantity);
 
-    // 统计商品总数
+    // 統計商品總數
     if (!productSummary.has(product)) {
       productSummary.set(product, 0);
     }
     productSummary.set(product, productSummary.get(product) + quantity);
   });
 
-  // 计算合并后的运单数量
+  // 計算合併後的運單數量
   waybillCount.value = orderMap.size;
 
-  // 获取商品统计并转换为数组
+  // 獲取商品統計並轉換為數組
   const productSummaryOutput = Array.from(productSummary.entries());
 
-  // 排序规则
+  // 排序規則
   const sortedProductSummary = productSummaryOutput.sort((a, b) => {
     const indexA = highlightedProducts.indexOf(a[0]);
     const indexB = highlightedProducts.indexOf(b[0]);
@@ -729,39 +727,39 @@ const handleOrderMerge = async() => {
     const indexA3 = highlightedProducts3.indexOf(a[0]);
     const indexB3 = highlightedProducts3.indexOf(b[0]);
 
-    if (indexA !== -1 && indexB !== -1) return indexA - indexB; // `highlightedProducts` 按原数组顺序
-    if (indexA !== -1) return -1; // `highlightedProducts` 优先
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB; // `highlightedProducts` 按原數組順序
+    if (indexA !== -1) return -1; // `highlightedProducts` 優先
     if (indexB !== -1) return 1;
 
-    if (indexA2 !== -1 && indexB2 !== -1) return indexA2 - indexB2; // `highlightedProducts2` 按原数组顺序
-    if (indexA2 !== -1) return -1; // `highlightedProducts2` 次优先
+    if (indexA2 !== -1 && indexB2 !== -1) return indexA2 - indexB2; // `highlightedProducts2` 按原數組順序
+    if (indexA2 !== -1) return -1; // `highlightedProducts2` 次優先
     if (indexB2 !== -1) return 1;
 
-    if (indexA3 !== -1 && indexB3 !== -1) return indexA3 - indexB3; // `highlightedProducts3` 按原数组顺序
-    if (indexA3 !== -1) return -1; // `highlightedProducts3` 次次优先
+    if (indexA3 !== -1 && indexB3 !== -1) return indexA3 - indexB3; // `highlightedProducts3` 按原數組順序
+    if (indexA3 !== -1) return -1; // `highlightedProducts3` 次次優先
     if (indexB3 !== -1) return 1;
 
-    return a[0].localeCompare(b[0]); // 其他商品按名称排序
+    return a[0].localeCompare(b[0]); // 其他商品按名稱排序
   });
 
 
 
-  // 格式化输出
+  // 格式化輸出
   const formattedProductSummary = sortedProductSummary
     .map(([product, totalQuantity]) => `${product} : ${totalQuantity}`)
     .join('\n');
 
-  // 组合最终输出
+  // 組合最終輸出
   const finalOutput = `【Total Orders】\n${waybillCount.value} Unit\n\n【Total Product】\n${formattedProductSummary}`;
 
   outputText.value = finalOutput;
   showNotificationWithDelay('Order Merged Successfully！', 'success');
-  // 弹出 modal
+  // 彈出 modal
   if (finalOutput !== '') {
-    showModal.value = true; // 打开 modal
+    showModal.value = true; // 打開 modal
     await nextTick(); // 等待 DOM 更新
     const modal = new bootstrap.Modal(modalRef.value); // 使用 Bootstrap 的 modal
-    modal.show(); // 显示 modal
+    modal.show(); // 顯示 modal
   }
 };
 
@@ -778,7 +776,7 @@ const handleClear = () => {
 
 <template>
   <div class="container">
-    <!-- 动态通知 -->
+    <!-- 動態通知 -->
     <div
       class="notification"
       :class="[notificationType === 'success' ? 'notification-success' : 'notification-error', showNotification ? 'notification-show' : '']"
@@ -786,7 +784,7 @@ const handleClear = () => {
       <div v-html="notificationMessage"></div> <!-- 使用 v-html 来渲染带 HTML 的内容 -->
     </div>
     
-    <!-- 输入与输出区 -->
+    <!-- 輸入與輸出區 -->
     <div class="row mt-5">
       <div class="col-12 d-flex justify-content-center">
         <textarea
@@ -825,14 +823,14 @@ const handleClear = () => {
 
 <style scoped>
 textarea {
-  width: 100%; /* Full width on small screens */
+  width: 100%; 
   resize: none;
   height: 400px;
   border: 2px solid #000;
 }
 @media (max-width: 767px) {
   textarea, .output {
-    height: 250px; /* Half the height on small screens */
+    height: 250px; 
   }
 }
 textarea:focus {
@@ -840,7 +838,7 @@ textarea:focus {
   border-color: black;
 }
 .output {
-  width: 100%; /* Full width on small screens */
+  width: 100%; 
   border: 2px solid #000;
   height: 400px;
   border-radius: 5px;
@@ -850,7 +848,7 @@ textarea:focus {
 }
 @media (max-width: 767px) {
   .output {
-    height: 250px; /* Half the height on small screens */
+    height: 250px; 
   }
 }
 .convert,
@@ -862,8 +860,8 @@ textarea:focus {
   border: none;
   cursor: pointer;
   transition: background-color 0.3s ease;
-  width: 100%; /* Full width on small screens */
-  max-width: 200px; /* Max width for larger screens */
+  width: 100%; 
+  max-width: 200px; 
 }
 .convert {
   background-color: #4caf50;
@@ -917,6 +915,6 @@ textarea:focus {
   padding: 30px;
 }
 .clickable-button:disabled {
-  pointer-events: auto; /* 允许点击事件 */
+  pointer-events: auto; /* 允許點擊事件 */
 }
 </style>
